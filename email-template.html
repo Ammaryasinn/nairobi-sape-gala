@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Nairobi SAPE Gala Ticket</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background-color: #f5f3ef;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo-wrap {
+            width: 170px;
+            margin: 0 auto 20px;
+        }
+        .logo-image {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+        .header h1 {
+            color: #fdfbf7;
+            font-size: 2rem;
+            margin: 10px 0;
+            font-weight: 700;
+        }
+        .header p {
+            color: #c59b64;
+            font-size: 1.1rem;
+            margin: 5px 0;
+            font-style: italic;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .success-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .success-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+        }
+        .success-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: #4caf50;
+        }
+        .success-message h2 {
+            color: #4caf50;
+            font-size: 1.5rem;
+            margin: 0 0 10px;
+        }
+        .success-message p {
+            color: #666;
+            font-size: 1rem;
+            margin: 0;
+        }
+        .ticket-card {
+            background: #f9f9f9;
+            border: 2px solid #c59b64;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .qr-code-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .qr-code-section img {
+            width: 200px;
+            height: 200px;
+            border: 3px solid #c59b64;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+        }
+        .qr-label {
+            margin-top: 15px;
+            color: #c59b64;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+        }
+        .ticket-details {
+            display: table;
+            width: 100%;
+        }
+        .ticket-row {
+            display: table-row;
+        }
+        .ticket-label,
+        .ticket-value {
+            display: table-cell;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .ticket-label {
+            color: #c59b64;
+            font-weight: 600;
+            width: 40%;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05rem;
+        }
+        .ticket-value {
+            color: #2d2d2d;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        .ticket-id {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #c59b64;
+        }
+        .event-details {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            color: #fdfbf7;
+        }
+        .event-details h3 {
+            color: #c59b64;
+            font-size: 1.3rem;
+            margin: 0 0 20px;
+            text-align: center;
+        }
+        .event-info {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        .event-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .event-icon svg {
+            stroke: #c59b64;
+            width: 100%;
+            height: 100%;
+        }
+        .event-text {
+            color: #f5f3ef;
+            line-height: 1.6;
+        }
+        .event-text strong {
+            color: #c59b64;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .instructions {
+            background: #fffbf5;
+            border-left: 4px solid #c59b64;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .instructions h4 {
+            color: #c59b64;
+            font-size: 1.1rem;
+            margin: 0 0 15px;
+        }
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .footer {
+            background: #1a1a1a;
+            padding: 30px 20px;
+            text-align: center;
+            color: #f5f3ef;
+        }
+        .footer-divider {
+            width: 60px;
+            height: 2px;
+            background: #c59b64;
+            margin: 0 auto 20px;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        .footer strong {
+            color: #c59b64;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #c59b64;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .ticket-card {
+                padding: 20px;
+            }
+            .event-details {
+                padding: 20px;
+            }
+            .ticket-label,
+            .ticket-value {
+                display: block;
+                width: 100%;
+            }
+            .ticket-label {
+                padding-bottom: 5px;
+            }
+            .ticket-value {
+                padding-top: 0;
+                padding-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-wrap">
+                <img src="https://sape-gala-2026.web.app/images/sape-logo.png" alt="SAPE Gala Logo" class="logo-image">
+            </div>
+            <h1>Nairobi SAPE Gala</h1>
+            <p>2026 Edition</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Success Message -->
+            <div class="success-message">
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <h2>Ticket Confirmed!</h2>
+                <p>Your purchase was successful. See you at the gala!</p>
+            </div>
+
+            <!-- Ticket Card -->
+            <div class="ticket-card">
+                <!-- QR Code -->
+                <div class="qr-code-section">
+                    <img src="{{QR_CODE_URL}}" alt="Ticket QR Code" />
+                    <div class="qr-label">Scan for Check-In</div>
+                </div>
+
+                <!-- Ticket Details -->
+                <div class="ticket-details">
+                    <div class="ticket-row">
+                        <div class="ticket-label">Ticket ID</div>
+                        <div class="ticket-value">
+                            <span class="ticket-id">{{TICKET_ID}}</span>
+                        </div>
+                    </div>
+                    <div class="ticket-row">
+                        <div class="ticket-label">Guest Name</div>
+                        <div class="ticket-value">{{GUEST_NAME}}</div>
+                    </div>
+                    <div class="ticket-row">
+                        <div class="ticket-label">Email</div>
+                        <div class="ticket-value">{{EMAIL}}</div>
+                    </div>
+                    <div class="ticket-row">
+                        <div class="ticket-label">Ticket Type</div>
+                        <div class="ticket-value">{{TICKET_TYPE}}</div>
+                    </div>
+                    <div class="ticket-row">
+                        <div class="ticket-label">Purchase Date</div>
+                        <div class="ticket-value">{{PURCHASE_DATE}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Details -->
+            <div class="event-details">
+                <h3>Event Information</h3>
+                
+                <div class="event-info">
+                    <div class="event-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <div class="event-text">
+                        <strong>Date</strong>
+                        16 May 2026, 6:00 PM onwards
+                    </div>
+                </div>
+
+                <div class="event-info">
+                    <div class="event-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                    </div>
+                    <div class="event-text">
+                        <strong>Venue</strong>
+                        Sarit Center Conference Hall<br>
+                        Nairobi, Kenya
+                    </div>
+                </div>
+
+                <div class="event-info">
+                    <div class="event-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                    </div>
+                    <div class="event-text">
+                        <strong>Theme</strong>
+                        Where Culture Meets Opportunity
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions">
+                <h4>📱 How to Check In at the Event</h4>
+                <ul>
+                    <li>Save this email or download the ticket to your phone</li>
+                    <li>Present the QR code at the check-in desk</li>
+                    <li>Staff will scan your code for instant verification</li>
+                    <li>Alternatively, provide your Ticket ID</li>
+                    <li>Arrive at least 30 minutes early to avoid queues</li>
+                </ul>
+            </div>
+
+            <p style="text-align: center; color: #666; line-height: 1.6; margin: 30px 0;">
+                We look forward to an extraordinary evening celebrating Sapologie, Pan-African excellence, 
+                and unprecedented networking opportunities. This is more than a gala—it's where culture meets opportunity.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-divider"></div>
+            <p><strong>Nairobi SAPE Gala 2026</strong></p>
+            <p>Style, Culture & Opportunity</p>
+            <p style="margin-top: 20px; font-size: 0.85rem;">
+                If you have any questions, please contact our support team.
+            </p>
+            <p style="margin-top: 20px; font-size: 0.75rem; color: #999;">
+                © 2026 Nairobi SAPE Gala. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

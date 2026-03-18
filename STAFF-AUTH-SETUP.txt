@@ -1,0 +1,294 @@
+╔════════════════════════════════════════════════════════════════╗
+║     STAFF AUTHENTICATION SETUP GUIDE - STEP BY STEP           ║
+║              SAPE Gala 2026 - Secure Staff Portal             ║
+╚════════════════════════════════════════════════════════════════╝
+
+PREREQUISITE: Firebase must already be set up (database created)
+If not done yet, follow FIREBASE-SETUP-GUIDE.md first.
+
+═══════════════════════════════════════════════════════════════
+
+PART 1: ENABLE FIREBASE AUTHENTICATION
+───────────────────────────────────────────────────────────────
+
+STEP 1: Go to Firebase Console
+☐ Open: https://console.firebase.google.com
+☐ Select your project: sape-gala-2026
+
+STEP 2: Enable Authentication
+☐ Click "Build" in left sidebar
+☐ Click "Authentication"
+☐ Click "Get started" button
+
+STEP 3: Enable Email/Password Sign-In
+☐ Click the "Sign-in method" tab at the top
+☐ Find "Email/Password" in the list
+☐ Click on "Email/Password"
+☐ Toggle ON the "Enable" switch
+☐ Leave "Email link (passwordless sign-in)" OFF
+☐ Click "Save"
+
+✅ Authentication is now enabled!
+
+═══════════════════════════════════════════════════════════════
+
+PART 2: CREATE STAFF ACCOUNTS
+───────────────────────────────────────────────────────────────
+
+STEP 1: Go to Users Tab
+☐ Click "Users" tab (next to "Sign-in method")
+☐ You should see an empty users list
+
+STEP 2: Add Your First Staff Member
+☐ Click "Add user" button
+☐ Fill in:
+    Email:    ___________________________________________
+              (e.g., admin@sapegala.com or your email)
+    
+    Password: ___________________________________________
+              (Choose a STRONG password - min 6 characters)
+              (e.g., SAPE2026Admin!@#)
+    
+☐ Click "Add user"
+☐ ✅ First staff account created!
+
+STEP 3: Add Additional Staff (Optional)
+Repeat for each staff member who needs check-in access:
+
+STAFF MEMBER 2:
+☐ Click "Add user"
+☐ Email:    ___________________________________________
+☐ Password: ___________________________________________
+☐ Click "Add user"
+
+STAFF MEMBER 3:
+☐ Click "Add user"
+☐ Email:    ___________________________________________
+☐ Password: ___________________________________________
+☐ Click "Add user"
+
+STAFF MEMBER 4:
+☐ Click "Add user"
+☐ Email:    ___________________________________________
+☐ Password: ___________________________________________
+☐ Click "Add user"
+
+💡 TIP: Use recognizable emails like:
+   - checkin1@sapegala.com
+   - checkin2@sapegala.com
+   - manager@sapegala.com
+
+═══════════════════════════════════════════════════════════════
+
+PART 3: UPDATE FIRESTORE SECURITY RULES
+───────────────────────────────────────────────────────────────
+
+STEP 1: Open Security Rules
+☐ Click "Firestore Database" in left sidebar
+☐ Click "Rules" tab at top
+
+STEP 2: Deploy Rules
+☐ Use the committed rules file: firestore.rules
+☐ From the project root, deploy rules with Firebase CLI
+☐ Confirm the deployed rules block public reads and writes
+
+STEP 3: Verify Deployment
+☐ Confirm only authenticated staff can read or update tickets
+☐ Confirm ticket creation now happens through the Cloud Function
+☐ Wait 30 seconds for rules to propagate
+
+✅ Security rules are now active!
+
+═══════════════════════════════════════════════════════════════
+
+PART 4: TEST AUTHENTICATION
+───────────────────────────────────────────────────────────────
+
+TEST 1: Staff Login Page
+☐ Open: staff-login.html in your browser
+☐ You should see a clean login page with:
+   - "Staff Portal" title
+   - Email field
+   - Password field
+   - "Sign In" button
+
+TEST 2: Login with Staff Credentials
+☐ Enter the email you created (e.g., admin@sapegala.com)
+☐ Enter the password you set
+☐ Click "Sign In"
+☐ ✅ Should redirect to staff-checkin.html
+☐ ✅ Should see the check-in dashboard
+
+TEST 3: Verify Protection
+☐ Click "Logout" button
+☐ Should redirect back to staff-login.html
+☐ Try to open staff-checkin.html directly (type URL)
+☐ ✅ Should automatically redirect to staff-login.html
+☐ This confirms protection is working!
+
+TEST 4: Test Wrong Password
+☐ On login page, enter correct email
+☐ Enter wrong password
+☐ Click "Sign In"
+☐ ✅ Should show error: "Invalid email or password"
+☐ Should NOT let you in
+
+TEST 5: Test Ticket Purchase (No Login Required)
+☐ Open: index.html
+☐ Click "Get Your Ticket"
+☐ Fill in test ticket details
+☐ Submit purchase
+☐ ✅ Should work WITHOUT requiring login
+☐ This confirms customers can still buy tickets freely
+
+═══════════════════════════════════════════════════════════════
+
+PART 5: SHARE CREDENTIALS WITH STAFF
+───────────────────────────────────────────────────────────────
+
+Create a secure document with staff credentials:
+
+┌────────────────────────────────────────────────────────────┐
+│ SAPE GALA 2026 - STAFF CHECK-IN CREDENTIALS                │
+├────────────────────────────────────────────────────────────┤
+│                                                             │
+│ Login URL: https://[your-domain]/staff-login.html          │
+│                                                             │
+│ STAFF MEMBER 1:                                            │
+│   Email:    _________________________________________      │
+│   Password: _________________________________________      │
+│                                                             │
+│ STAFF MEMBER 2:                                            │
+│   Email:    _________________________________________      │
+│   Password: _________________________________________      │
+│                                                             │
+│ STAFF MEMBER 3:                                            │
+│   Email:    _________________________________________      │
+│   Password: _________________________________________      │
+│                                                             │
+│ ⚠️ KEEP THIS INFORMATION SECURE                             │
+│ ⚠️ DO NOT SHARE PUBLICLY                                   │
+│ ⚠️ DELETE AFTER EVENT                                       │
+│                                                             │
+└────────────────────────────────────────────────────────────┘
+
+💡 BEST PRACTICES:
+- Share credentials via encrypted messaging (WhatsApp, Signal)
+- Give each staff member their OWN login
+- Change passwords after the event
+- Don't use personal email addresses
+
+═══════════════════════════════════════════════════════════════
+
+HOW IT WORKS NOW
+───────────────────────────────────────────────────────────────
+
+FOR CUSTOMERS (PUBLIC):
+✅ Can visit website without login
+✅ Can buy tickets freely
+✅ Can download tickets
+✅ No account needed
+
+FOR STAFF (PROTECTED):
+🔒 Must login at staff-login.html
+🔒 Need valid email/password from Firebase
+🔒 Can access check-in portal after login
+🔒 Can check in tickets and view guest lists
+🔒 Can logout when done
+
+FOR SECURITY:
+🔒 Database blocks direct public ticket creation
+🔒 Database blocks direct public ticket reading
+🔒 Database ONLY allows authenticated users to READ, UPDATE, and DELETE tickets
+✅ Ticket creation is handled securely through the backend function
+✅ Staff portal automatically redirects if not logged in
+
+═══════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING
+───────────────────────────────────────────────────────────────
+
+PROBLEM: "Invalid email or password" error
+SOLUTION:
+☐ Check email is EXACTLY as entered in Firebase Console
+☐ Check password (case-sensitive, no extra spaces)
+☐ Verify account exists in Firebase → Authentication → Users
+☐ Try password reset if needed
+
+PROBLEM: Login works but redirects back to login page
+SOLUTION:
+☐ Check browser console (F12) for errors
+☐ Verify Firebase Auth SDK loaded correctly
+☐ Check firebase-config.js has correct credentials
+☐ Clear browser cache and try again
+
+PROBLEM: Can't access staff-checkin.html even when logged in
+SOLUTION:
+☐ Check browser console for JavaScript errors
+☐ Verify staff-auth.js is loaded (check Network tab)
+☐ Try logging out and logging in again
+☐ Check Firestore rules are published
+
+PROBLEM: Customers can't buy tickets
+SOLUTION:
+☐ Check the backend function is deployed successfully
+☐ Check Firestore rules were deployed from firestore.rules
+☐ Verify firebase-config.js is correct
+☐ Check browser console for errors
+
+═══════════════════════════════════════════════════════════════
+
+SECURITY CHECKLIST
+───────────────────────────────────────────────────────────────
+
+BEFORE EVENT:
+☐ All staff accounts created in Firebase
+☐ Strong passwords used (min 8+ characters)
+☐ Credentials shared securely with staff
+☐ Staff tested login process
+☐ Firestore rules published and active
+☐ Customer ticket purchase works without login
+
+DURING EVENT:
+☐ Staff login with their own credentials
+☐ Do NOT share login credentials publicly
+☐ Logout when leaving check-in station
+☐ Monitor for any unauthorized access attempts
+
+AFTER EVENT:
+☐ Change all staff passwords
+☐ Or delete staff accounts if no longer needed
+☐ Keep ticket data for records
+☐ Export guest list for future reference
+
+═══════════════════════════════════════════════════════════════
+
+✅ SETUP COMPLETE!
+───────────────────────────────────────────────────────────────
+
+Your staff portal is now secure with:
+✅ Email/password authentication
+✅ Protected check-in portal
+✅ Individual staff accounts
+✅ Secure database rules
+✅ Public ticket purchases (no login needed)
+✅ Automatic redirect protection
+
+Total setup time: ~15 minutes
+Security level: Production-ready ✨
+
+═══════════════════════════════════════════════════════════════
+
+QUICK REFERENCE
+───────────────────────────────────────────────────────────────
+
+Staff Login URL:     staff-login.html
+Customer Page:       index.html
+Ticket Purchase:     payment.html (no login needed)
+Check-in Portal:     staff-checkin.html (requires login)
+
+Manage Staff:        Firebase Console → Authentication → Users
+Security Rules:      Firebase Console → Firestore → Rules
+View Tickets:        Firebase Console → Firestore → tickets
+
+═══════════════════════════════════════════════════════════════

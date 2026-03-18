@@ -1,0 +1,141 @@
+═══════════════════════════════════════════════════════════
+    FIREBASE FUNCTIONS DEPLOYMENT GUIDE
+    Email Service with Resend for SAPE Gala 2026
+═══════════════════════════════════════════════════════════
+
+✅ Your Resend API Key: [set this in the RESEND_API_KEY environment variable]
+
+═══════════════════════════════════════════════════════════
+
+📋 STEP-BY-STEP DEPLOYMENT
+───────────────────────────
+
+STEP 1: Install Node.js (if not already installed)
+☐ Go to https://nodejs.org/
+☐ Download LTS version (v18 or v20)
+☐ Run installer
+☐ Verify: Open PowerShell and run: node --version
+
+STEP 2: Install Firebase CLI
+☐ Open PowerShell as Administrator
+☐ Run: npm install -g firebase-tools
+☐ Wait for installation to complete
+☐ Verify: firebase --version
+
+STEP 3: Login to Firebase
+☐ In PowerShell, run: firebase login
+☐ A browser window will open
+☐ Sign in with the same Google account you used for Firebase
+☐ Allow Firebase CLI to access your account
+☐ Return to PowerShell - you should see "Success!"
+
+STEP 4: Navigate to Your Project
+☐ In PowerShell, run:
+    cd C:\Users\kyalo\nairobi-sape-gala
+
+STEP 5: Initialize Firebase Functions (if not done)
+☐ Run: firebase init functions
+☐ Select: "Use an existing project"
+☐ Choose: sape-gala-2026
+☐ Language: JavaScript
+☐ ESLint: No
+☐ Install dependencies: Yes
+☐ Wait for installation
+
+STEP 6: Install Dependencies
+☐ Run: cd functions
+☐ Run: npm install
+☐ Wait for installation (this installs node-fetch)
+
+STEP 7: Set Your Resend API Key
+☐ Run this command (copy/paste exactly):
+
+    Set RESEND_API_KEY in your deployment environment or secret manager before deploying functions
+
+☐ You should see: "✔ Functions config updated"
+
+STEP 8: Deploy Functions
+☐ Run: cd ..
+☐ Run: firebase deploy --only functions
+☐ Wait 2-3 minutes for deployment
+☐ Look for "✔ Deploy complete!"
+
+STEP 9: Verify Deployment
+☐ Go to Firebase Console: https://console.firebase.google.com
+☐ Select your project: sape-gala-2026
+☐ Click "Functions" in left menu
+☐ You should see:
+    - sendTicketEmail
+    - sendEventReminders
+☐ Both should show status: "Healthy"
+
+═══════════════════════════════════════════════════════════
+
+✅ TESTING YOUR EMAIL SYSTEM
+─────────────────────────────
+
+1. Open your website: index.html
+2. Click "Get Your Ticket"
+3. Fill out form and submit
+4. Check your email inbox
+5. You should receive a beautiful ticket confirmation!
+
+If you get the email, everything is working! 🎉
+
+═══════════════════════════════════════════════════════════
+
+🔧 TROUBLESHOOTING
+──────────────────
+
+Problem: "firebase: command not found"
+Solution: Reinstall Firebase CLI or restart PowerShell
+
+Problem: "Permission denied"
+Solution: Run PowerShell as Administrator
+
+Problem: "Project not found"
+Solution: Make sure you selected the correct project during init
+
+Problem: "Functions config error"
+Solution: Re-run the config:set command from Step 7
+
+Problem: "Email not received"
+Solution: 
+1. Check spam folder
+2. Verify Resend API key is correct
+3. Check Firebase Functions logs: firebase functions:log
+
+═══════════════════════════════════════════════════════════
+
+📧 WHAT HAPPENS AFTER DEPLOYMENT
+─────────────────────────────────
+
+1. When someone buys a ticket on your website:
+   - Their ticket data is saved to Firestore
+   - A Cloud Function automatically triggers
+   - Beautiful confirmation email sent via Resend
+   - QR code included for check-in
+
+2. One day before the event (May 15, 2026):
+   - Automatic reminder emails sent to all attendees
+   - Runs at 6:00 PM daily (checks if tomorrow is event day)
+
+3. All emails come from: onboarding@resend.dev
+   (Until you add your own domain to Resend)
+
+═══════════════════════════════════════════════════════════
+
+🎯 NEXT STEPS AFTER EMAIL IS WORKING
+─────────────────────────────────────
+
+1. ☐ Set up payment integration (M-Pesa, Cards)
+2. ☐ Test complete ticket purchase flow
+3. ☐ Test staff check-in system
+4. ☐ Get domain name and hosting
+5. ☐ Add domain to Resend for branded emails
+6. ☐ Go live!
+
+═══════════════════════════════════════════════════════════
+
+Need help? The functions are ready to deploy!
+Just follow the steps above one by one.

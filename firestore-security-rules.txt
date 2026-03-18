@@ -1,0 +1,13 @@
+// FIRESTORE SECURITY RULES
+// Source of truth: firestore.rules
+// Deploy with: firebase deploy --only firestore:rules
+//
+// SECURITY MODEL
+// - Public users do NOT read or write Firestore directly.
+// - Ticket creation happens through the hardened Cloud Function.
+// - Only authenticated staff can read, update, or delete tickets.
+// - Staff updates are limited to check-in state changes.
+// - Rate-limit documents are never client-accessible.
+//
+// The active rules are stored in firestore.rules at the project root.
+// Copying rules manually in the console is no longer recommended.

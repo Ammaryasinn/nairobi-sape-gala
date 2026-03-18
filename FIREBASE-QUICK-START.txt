@@ -1,0 +1,83 @@
+╔════════════════════════════════════════════════════════════════╗
+║          FIREBASE QUICK START - 5 MINUTE REFERENCE            ║
+║                   SAPE Gala 2026 - 800 Tickets                ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────┐
+│ 1. CREATE PROJECT                                              │
+└────────────────────────────────────────────────────────────────┘
+→ https://console.firebase.google.com
+→ "Add project" 
+→ Name: sape-gala-2026
+→ Enable Analytics ✓
+→ Create
+
+┌────────────────────────────────────────────────────────────────┐
+│ 2. ENABLE FIRESTORE                                            │
+└────────────────────────────────────────────────────────────────┘
+→ Build → Firestore Database
+→ Create database
+→ Production mode
+→ Location: eur3 (europe-west)
+→ Enable
+
+┌────────────────────────────────────────────────────────────────┐
+│ 3. SET RULES                                                   │
+└────────────────────────────────────────────────────────────────┘
+→ Firestore → Rules tab
+→ Paste this:
+
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /tickets/{ticketId} {
+          allow read, write: if true;
+        }
+      }
+    }
+
+→ Publish
+
+┌────────────────────────────────────────────────────────────────┐
+│ 4. GET CONFIG                                                  │
+└────────────────────────────────────────────────────────────────┘
+→ Home → "</>" icon (Web)
+→ Nickname: SAPE Gala Website
+→ Register app
+→ COPY ALL 6 VALUES ↓
+
+┌────────────────────────────────────────────────────────────────┐
+│ 5. UPDATE CODE                                                 │
+└────────────────────────────────────────────────────────────────┘
+→ Open: firebase-config.js
+→ Replace lines 5-11:
+
+    const firebaseConfig = {
+        apiKey: "PASTE_YOUR_API_KEY",
+        authDomain: "PASTE_YOUR_DOMAIN",
+        projectId: "PASTE_YOUR_PROJECT_ID",
+        storageBucket: "PASTE_YOUR_BUCKET",
+        messagingSenderId: "PASTE_YOUR_SENDER_ID",
+        appId: "PASTE_YOUR_APP_ID"
+    };
+
+→ Save (Ctrl + S)
+
+┌────────────────────────────────────────────────────────────────┐
+│ 6. TEST                                                        │
+└────────────────────────────────────────────────────────────────┘
+→ Open index.html
+→ F12 → Console
+→ Should see: "✅ Firebase initialized successfully"
+→ Buy test ticket
+→ Check Firebase Console → Firestore → tickets collection
+→ If you see ticket data → SUCCESS! 🎉
+
+╔════════════════════════════════════════════════════════════════╗
+║ 📊 YOUR CAPACITY: 800 tickets = FREE (uses <5% of free tier)  ║
+╚════════════════════════════════════════════════════════════════╝
+
+╔════════════════════════════════════════════════════════════════╗
+║ 🆘 TROUBLE? Check browser console (F12) for error messages    ║
+║    Full guide: FIREBASE-SETUP-GUIDE.md                        ║
+╚════════════════════════════════════════════════════════════════╝

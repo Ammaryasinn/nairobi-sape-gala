@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isStaff() {
+      return request.auth != null;
+    }
+
+    function allowedTicketKeys() {
+      return request.resource.data.keys().hasOnly([
+        'ticketId',
+        'fullName',
+        'email',
+        'phone',
+        'ticketType',
+        'ticketPrice',
+        'paymentMethod',
+        'purchaseDate',
+        'checkedIn',
+        'checkInTime',
+        'groupSize',
+        'ticketNumber'
+      ]);
+    }
+
+    function validTicketId(ticketId) {
+      return ticketId.matches('^SAPE2026-[A-Z0-9]{8}$');
+    }
+
+    function validEmail(email) {
+      return email is string && email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+    }
+
+    function validPhone(phone) {
+      return phone is string && phone.matches('^\\+?[0-9]{10,15}$');
+    }
+
+    function validTicketType(type, price) {
+      return (
+        (type == 'Early Bird - KES 2,500' && price == 2500) ||
+        (type == 'Standard - KES 5,000' && price == 5000) ||
+        (type == 'VIP - KES 10,000' && price == 10000)
+      );
+    }
+
+    function validCreate(ticketId) {
+      return allowedTicketKeys()
+        && request.resource.data.ticketId == ticketId
+        && validTicketId(ticketId)
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() > 1
+        && request.resource.data.fullName.size() <= 120
+        && validEmail(request.resource.data.email)
+        && validPhone(request.resource.data.phone)
+        && validTicketType(request.resource.data.ticketType, request.resource.data.ticketPrice)
+        && request.resource.data.paymentMethod in ['mpesa', 'bank']
+        && request.resource.data.purchaseDate is string
+        && request.resource.data.checkedIn == false
+        && request.resource.data.checkInTime == null
+        && request.resource.data.groupSize is int
+        && request.resource.data.groupSize >= 1
+        && request.resource.data.groupSize <= 10
+        && request.resource.data.ticketNumber is int
+        && request.resource.data.ticketNumber >= 1
+        && request.resource.data.ticketNumber <= request.resource.data.groupSize;
+    }
+
+    function validStaffUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['checkedIn', 'checkInTime'])
+        && request.resource.data.ticketId == resource.data.ticketId
+        && request.resource.data.fullName == resource.data.fullName
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.phone == resource.data.phone
+        && request.resource.data.ticketType == resource.data.ticketType
+        && request.resource.data.ticketPrice == resource.data.ticketPrice
+        && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.purchaseDate == resource.data.purchaseDate
+        && request.resource.data.groupSize == resource.data.groupSize
+        && request.resource.data.ticketNumber == resource.data.ticketNumber
+        && request.resource.data.checkedIn is bool
+        && (
+          (request.resource.data.checkedIn == false && request.resource.data.checkInTime == null) ||
+          (request.resource.data.checkedIn == true && request.resource.data.checkInTime is string)
+        );
+    }
+
+    match /tickets/{ticketId} {
+      allow create: if false;
+      allow read: if isStaff();
+      allow update: if isStaff() && validStaffUpdate();
+      allow delete: if isStaff();
+    }
+
+    match /settings/{document} {
+      allow read, write: if isStaff();
+    }
+
+    match /staff/{userId} {
+      allow read, write: if isStaff();
+    }
+
+    match /_rate_limits/{document} {
+      allow read, write: if false;
+    }
+  }
+}
