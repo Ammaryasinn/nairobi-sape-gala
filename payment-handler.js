@@ -110,29 +110,18 @@ function initializePaymentPage() {
         });
     }
     
-    // Payment method toggle
-    const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
-    const mpesaFields = document.getElementById('mpesaFields');
-    const cardFields = document.getElementById('cardFields');
-    const bankFields = document.getElementById('bankFields');
+    // Early Bird Automation
+    const LAUNCH_DATE_STR = '2026-04-01T00:00:00Z'; // Placeholder: update with actual launch date
+    const LAUNCH_DATE = new Date(LAUNCH_DATE_STR);
+    const EARLY_BIRD_DEADLINE = new Date(LAUNCH_DATE.getTime() + (9 * 24 * 60 * 60 * 1000));
     
-    paymentMethodRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const value = e.target.value;
-            
-            // Hide all fields
-            if (mpesaFields) mpesaFields.style.display = 'none';
-            if (cardFields) cardFields.style.display = 'none';
-            if (bankFields) bankFields.style.display = 'none';
-            
-            // Show selected field
-            if (value === 'mpesa') {
-                if (mpesaFields) mpesaFields.style.display = 'block';
-            } else if (value === 'bank') {
-                if (bankFields) bankFields.style.display = 'block';
+    if (new Date() > EARLY_BIRD_DEADLINE && ticketTypeSelect) {
+        Array.from(ticketTypeSelect.options).forEach(option => {
+            if (option.text.includes('Early Bird')) {
+                ticketTypeSelect.removeChild(option);
             }
         });
-    });
+    }
     
     // Form submission
     const paymentForm = document.getElementById('paymentForm');
@@ -184,17 +173,9 @@ async function handlePaymentSubmit(e) {
         return;
     }
 
-    if (!['mpesa', 'bank'].includes(paymentMethod)) {
-        alert('Only M-Pesa and bank transfer are currently available.');
+    if (paymentMethod !== 'bank') {
+        alert('Only bank transfer is currently available.');
         return;
-    }
-
-    if (paymentMethod === 'mpesa') {
-        const mpesaNumber = normalizePhone((document.getElementById('mpesaNumber')?.value || '').trim());
-        if (!/^\+?[0-9]{10,15}$/.test(mpesaNumber)) {
-            alert('Please enter a valid M-Pesa number.');
-            return;
-        }
     }
     
     // Collect additional names if quantity > 1
@@ -414,6 +395,10 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     if (ticketData.ticketType.includes('Early Bird')) {
         ticketCategory = 'EARLY BIRD';
         bgColor = '#1a3a2e'; // Dark green for Early Bird
+    } else if (ticketData.ticketType.includes('VVIP')) {
+        ticketCategory = 'VVIP';
+        bgColor = '#000000'; // Black for VVIP
+        ticketLabel = '— VVIP —';
     } else if (ticketData.ticketType.includes('VIP')) {
         ticketCategory = 'VIP';
         bgColor = '#1a3a2e'; // Dark green for VIP
@@ -539,7 +524,16 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     ctx.stroke();
     
     // Ticket category badge
-    if (ticketCategory === 'VIP') {
+    if (ticketCategory === 'VVIP') {
+        ctx.fillStyle = 'rgba(197, 155, 100, 0.2)';
+        ctx.fillRect(leftX - 98, 220, 196, 76);
+        
+        ctx.fillStyle = '#c59b64';
+        ctx.font = 'bold 14px serif';
+        ctx.fillText('— VVIP —', leftX, 244);
+        ctx.font = '18px serif';
+        ctx.fillText('KES 20,000', leftX, 276);
+    } else if (ticketCategory === 'VIP') {
         ctx.fillStyle = 'rgba(197, 155, 100, 0.2)';
         ctx.fillRect(leftX - 98, 220, 196, 76);
         
@@ -604,7 +598,7 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     ctx.fillStyle = '#c59b64';
     ctx.font = 'bold 28px serif';
     ctx.textAlign = 'center';
-    ctx.fillText(ticketLabel === '— VIP —' ? ticketLabel : 'TICKET', rightCenterX, 45);
+    ctx.fillText(ticketLabel === '— VIP —' || ticketLabel === '— VVIP —' ? ticketLabel : 'TICKET', rightCenterX, 45);
     
     // Decorative line
     ctx.strokeStyle = '#c59b64';
@@ -756,20 +750,7 @@ function setupInputFormatters() {
         });
     }
     
-    // Format M-Pesa number
-    const mpesaNumber = document.getElementById('mpesaNumber');
-    if (mpesaNumber) {
-        mpesaNumber.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.startsWith('254')) {
-                value = '+' + value;
-            } else if (value.startsWith('0')) {
-                value = '+254' + value.substring(1);
-            }
-            e.target.value = value;
-        });
-    }
-    
+
     // Format card number
     const cardNumber = document.getElementById('cardNumber');
     if (cardNumber) {

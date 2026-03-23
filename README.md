@@ -165,9 +165,10 @@ Edit CSS variables in `styles.css`:
 Edit in `payment.html`:
 ```html
 <select id="ticketType" class="ticket-select">
-    <option value="5000">VIP - KES 5,000</option>
-    <option value="3000">Standard - KES 3,000</option>
-    <option value="7500">Table for 2 - KES 7,500</option>
+    <option value="3000">Early Bird - KES 3,000</option>
+    <option value="5000">Standard - KES 5,000</option>
+    <option value="10000">VIP - KES 10,000</option>
+    <option value="20000">VVIP - KES 20,000</option>
 </select>
 ```
 

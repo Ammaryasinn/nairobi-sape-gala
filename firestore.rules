@@ -34,11 +34,17 @@ service cloud.firestore {
       return phone is string && phone.matches('^\\+?[0-9]{10,15}$');
     }
 
+    function isEarlyBirdValid() {
+      // Early bird ends 9 days after 2026-04-01, which is 2026-04-10
+      return request.time < timestamp("2026-04-10T00:00:00Z");
+    }
+
     function validTicketType(type, price) {
       return (
-        (type == 'Early Bird - KES 2,500' && price == 2500) ||
+        (type == 'Early Bird - KES 3,000 (Available for 9 days only)' && price == 3000 && isEarlyBirdValid()) ||
         (type == 'Standard - KES 5,000' && price == 5000) ||
-        (type == 'VIP - KES 10,000' && price == 10000)
+        (type == 'VIP - KES 10,000' && price == 10000) ||
+        (type == 'VVIP - KES 20,000' && price == 20000)
       );
     }
 
@@ -52,7 +58,7 @@ service cloud.firestore {
         && validEmail(request.resource.data.email)
         && validPhone(request.resource.data.phone)
         && validTicketType(request.resource.data.ticketType, request.resource.data.ticketPrice)
-        && request.resource.data.paymentMethod in ['mpesa', 'bank']
+        && request.resource.data.paymentMethod == 'bank'
         && request.resource.data.purchaseDate is string
         && request.resource.data.checkedIn == false
         && request.resource.data.checkInTime == null

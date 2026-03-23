@@ -29,10 +29,13 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 
 const TICKET_TYPES = {
-    'Early Bird - KES 2,500': 2500,
+    'Early Bird - KES 3,000 (Available for 9 days only)': 3000,
     'Standard - KES 5,000': 5000,
-    'VIP - KES 10,000': 10000
+    'VIP - KES 10,000': 10000,
+    'VVIP - KES 20,000': 20000
 };
+
+const LAUNCH_DATE_STR = '2026-04-01T00:00:00Z'; // Placeholder: update with actual launch date
 
 const PUBLIC_LOGO_URL = process.env.PUBLIC_LOGO_URL || 'https://sape-gala-2026.web.app/images/sape-logo.png?v=20260317';
 
@@ -189,8 +192,8 @@ function validatePhone(value) {
 }
 
 function validatePaymentMethod(value) {
-    if (!['mpesa', 'bank'].includes(value)) {
-        const error = new Error('Only M-Pesa and bank transfer are currently supported.');
+    if (value !== 'bank') {
+        const error = new Error('Only bank transfer is currently supported.');
         error.statusCode = 400;
         throw error;
     }
@@ -206,6 +209,16 @@ function validateTicketType(ticketType, ticketPrice) {
         const error = new Error('Ticket type or ticket price is invalid.');
         error.statusCode = 400;
         throw error;
+    }
+
+    if (normalizedType.includes('Early Bird')) {
+        const launchDate = new Date(LAUNCH_DATE_STR);
+        const earlyBirdDeadline = new Date(launchDate.getTime() + (9 * 24 * 60 * 60 * 1000));
+        if (new Date() > earlyBirdDeadline) {
+            const error = new Error('Early Bird tickets are no longer available.');
+            error.statusCode = 400;
+            throw error;
+        }
     }
 
     return {

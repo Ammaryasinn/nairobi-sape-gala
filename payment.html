@@ -6,8 +6,8 @@
     <title>Ticket Purchase - Nairobi SAPE Gala 2026</title>
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Reserve your tickets for the Nairobi SAPE Gala 2026. Early Bird KES 2,500 | Standard KES 5,000 | VIP KES 10,000. Protected checkout via M-Pesa or bank transfer.">
-    <meta name="keywords" content="buy SAPE Gala tickets, Nairobi event tickets, VIP gala tickets Kenya, early bird tickets, M-Pesa payment, online ticket purchase">
+    <meta name="description" content="Reserve your tickets for the Nairobi SAPE Gala 2026. Early Bird KES 3,000 | Standard KES 5,000 | VIP KES 10,000 | VVIP KES 20,000. Protected checkout via bank transfer.">
+    <meta name="keywords" content="buy SAPE Gala tickets, Nairobi event tickets, VVIP gala tickets Kenya, VIP gala tickets Kenya, early bird tickets, bank transfer payment, online ticket purchase">
     <meta name="author" content="Nairobi SAPE Gala">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://nairobisapegala.com/payment.html">
@@ -23,7 +23,7 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:url" content="https://nairobisapegala.com/payment.html">
     <meta name="twitter:title" content="Get Your Tickets - Nairobi SAPE Gala 2026">
-    <meta name="twitter:description" content="Tickets from KES 2,500. Secure online payment.">
+    <meta name="twitter:description" content="Tickets from KES 3,000. Secure online payment.">
     
     <!-- Additional Meta Tags -->
     <meta name="theme-color" content="#c59b64">
@@ -125,9 +125,10 @@
                         <div class="ticket-type">
                             <span class="ticket-label">Ticket Type</span>
                             <select id="ticketType" class="ticket-select">
-                                <option value="2500">Early Bird - KES 2,500</option>
+                                <option value="3000">Early Bird - KES 3,000 (Available for 9 days only)</option>
                                 <option value="5000" selected>Standard - KES 5,000</option>
                                 <option value="10000">VIP - KES 10,000</option>
+                                <option value="20000">VVIP - KES 20,000</option>
                             </select>
                         </div>
                         <div class="ticket-type">
@@ -201,20 +202,7 @@
 
                         <div class="payment-methods">
                             <label class="payment-method">
-                                <input type="radio" name="paymentMethod" value="mpesa" checked>
-                                <div class="method-card">
-                                    <div class="method-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                                        </svg>
-                                    </div>
-                                    <span class="method-name">M-Pesa</span>
-                                </div>
-                            </label>
-
-                            <label class="payment-method">
-                                <input type="radio" name="paymentMethod" value="bank">
+                                <input type="radio" name="paymentMethod" value="bank" checked>
                                 <div class="method-card">
                                     <div class="method-icon">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -227,14 +215,7 @@
                             </label>
                         </div>
 
-                        <div id="mpesaFields" class="payment-fields">
-                            <div class="form-group">
-                                <label for="mpesaNumber" class="form-label">M-Pesa Number</label>
-                                <input type="tel" id="mpesaNumber" class="form-input" placeholder="+254 7XX XXX XXX">
-                            </div>
-                        </div>
-
-                        <div id="bankFields" class="payment-fields" style="display: none;">
+                        <div id="bankFields" class="payment-fields">
                             <div class="bank-info">
                                 <p class="bank-details">Please transfer the amount to:</p>
                                 <p class="bank-details"><strong>Bank:</strong> Kenya Commercial Bank</p>

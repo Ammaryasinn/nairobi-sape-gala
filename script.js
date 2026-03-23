@@ -72,31 +72,7 @@ if (document.getElementById('paymentForm')) {
         totalAmountEl.textContent = `KES ${parseInt(price).toLocaleString()}`;
     });
     
-    // Payment method toggle
-    const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
-    const mpesaFields = document.getElementById('mpesaFields');
-    const cardFields = document.getElementById('cardFields');
-    const bankFields = document.getElementById('bankFields');
-    
-    paymentMethodRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const value = e.target.value;
-            
-            // Hide all fields
-            mpesaFields.style.display = 'none';
-            cardFields.style.display = 'none';
-            bankFields.style.display = 'none';
-            
-            // Show selected field
-            if (value === 'mpesa') {
-                mpesaFields.style.display = 'block';
-            } else if (value === 'card') {
-                cardFields.style.display = 'block';
-            } else if (value === 'bank') {
-                bankFields.style.display = 'block';
-            }
-        });
-    });
+
     
     // Form submission
     const paymentForm = document.getElementById('paymentForm');
@@ -146,20 +122,7 @@ if (document.getElementById('paymentForm')) {
         e.target.value = value;
     });
     
-    // Format M-Pesa number
-    const mpesaNumber = document.getElementById('mpesaNumber');
-    if (mpesaNumber) {
-        mpesaNumber.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.startsWith('254')) {
-                value = '+' + value;
-            } else if (value.startsWith('0')) {
-                value = '+254' + value.substring(1);
-            }
-            e.target.value = value;
-        });
-    }
-    
+
     // Format card number
     const cardNumber = document.getElementById('cardNumber');
     if (cardNumber) {
