@@ -143,12 +143,12 @@ exports.sendTicketEmail = functions.https.onCall(async (data, context) => {
             <div class="event-details">
                 <h3>Event Information</h3>
                 <div class="event-info">
-                    <strong>Date</strong>
-                    16 May 2026, 6:00 PM onwards
+                    Saturday, May 23, 2026<br>
+                    3:00 PM - 9:00 PM (EAT)
                 </div>
                 <div class="event-info">
                     <strong>Venue</strong>
-                    Sarit Center Conference Hall, Nairobi, Kenya
+                    Emara Ole-Sereni, Mombasa Road, Nairobi, Kenya
                 </div>
                 <div class="event-info">
                     <strong>Theme</strong>
@@ -157,7 +157,7 @@ exports.sendTicketEmail = functions.https.onCall(async (data, context) => {
             </div>
             
             <div class="instructions">
-                <h4>📱 How to Check In</h4>
+                <h4>How to Check In</h4>
                 <ul>
                     <li>Save this email or download the ticket</li>
                     <li>Present the QR code at check-in desk</li>
@@ -244,8 +244,8 @@ exports.sendEventReminders = functions.pubsub
                         <h2>Don't forget!</h2>
                         <p>Hi ${ticket.fullName},</p>
                         <p>The Nairobi SAPE Gala 2026 is coming up in ${daysUntilEvent} day${daysUntilEvent > 1 ? 's' : ''}!</p>
-                        <p><strong>Date:</strong> 16 May 2026, 6:00 PM</p>
-                        <p><strong>Venue:</strong> Sarit Center Conference Hall, Nairobi</p>
+                        <p><strong>Date:</strong> Saturday, May 23, 2026, 3:00 PM - 9:00 PM</p>
+                        <p><strong>Venue:</strong> Emara Ole-Sereni, Nairobi</p>
                         <p><strong>Your Ticket ID:</strong> ${ticket.ticketId}</p>
                         <p>We can't wait to see you there!</p>
                     `

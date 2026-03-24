@@ -174,8 +174,8 @@ window.addEventListener('load', () => {
 // COUNTDOWN TIMER
 // ===========================
 function initCountdown() {
-    // Event date: May 16, 2026, 6:00 PM EAT (UTC+3)
-    const eventDate = new Date('2026-05-16T18:00:00+03:00').getTime();
+    // Event date: May 23, 2026, 3:00 PM EAT (UTC+3)
+    const eventDate = new Date('2026-05-23T15:00:00+03:00').getTime();
     
     function updateCountdown() {
         const now = new Date().getTime();
@@ -289,7 +289,7 @@ window.submitSponsorInquiry = async function(event) {
         
     } catch (error) {
         console.error('Error submitting inquiry:', error);
-        alert('There was an error submitting your inquiry. Please email us directly at sponsors@nairobisapegala.com');
+        alert('There was an error submitting your inquiry. Please email us directly at partnerships.sapegala@gmail.com');
     } finally {
         submitButton.innerHTML = originalText;
         submitButton.disabled = false;

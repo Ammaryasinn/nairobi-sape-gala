@@ -3,7 +3,7 @@
 
 let currentTicketData = null;
 let allGeneratedTickets = []; // Store all tickets from multi-ticket purchase
-const TICKET_LOGO_SRC = `${window.location.origin}/images/sape-logo.png`;
+const TICKET_LOGO_SRC = 'images/sape-logo.png';
 
 function escapeHtml(value) {
     return String(value)
@@ -33,7 +33,7 @@ function loadTicketLogo() {
         const logo = new Image();
         logo.onload = () => resolve(logo);
         logo.onerror = () => resolve(null);
-        logo.src = `${TICKET_LOGO_SRC}?v=2026`;
+        logo.src = TICKET_LOGO_SRC;
     });
 }
 
@@ -75,7 +75,7 @@ function initializePaymentPage() {
         totalAmountEl.textContent = `KES ${total.toLocaleString()}`;
     }
     
-    // Generate additional name input fields
+    // Generate additional name + email input fields per guest
     function updateAdditionalNameFields() {
         const quantity = parseInt(ticketQuantitySelect.value);
         
@@ -83,13 +83,19 @@ function initializePaymentPage() {
             additionalNamesSection.style.display = 'block';
             additionalNamesContainer.innerHTML = '';
             
-            // Create input fields for tickets 2 through quantity
             for (let i = 2; i <= quantity; i++) {
                 const fieldGroup = document.createElement('div');
-                fieldGroup.className = 'form-group';
+                fieldGroup.style.marginBottom = '1.5rem';
                 fieldGroup.innerHTML = `
-                    <label for="additionalName${i}" class="form-label">Ticket ${i} - Guest Name (Optional)</label>
-                    <input type="text" id="additionalName${i}" class="form-input" placeholder="Leave blank to use primary contact name">
+                    <p style="color: var(--gold); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08rem; margin-bottom: 0.8rem;">Ticket ${i}</p>
+                    <div class="form-group" style="margin-bottom: 0.8rem;">
+                        <label for="additionalName${i}" class="form-label">Guest Name (Optional)</label>
+                        <input type="text" id="additionalName${i}" class="form-input" placeholder="Leave blank to use primary contact name">
+                    </div>
+                    <div class="form-group">
+                        <label for="additionalEmail${i}" class="form-label">Guest Email (Optional)</label>
+                        <input type="email" id="additionalEmail${i}" class="form-input" placeholder="Leave blank to send to primary contact email">
+                    </div>
                 `;
                 additionalNamesContainer.appendChild(fieldGroup);
             }
@@ -120,6 +126,26 @@ function initializePaymentPage() {
             if (option.text.includes('Early Bird')) {
                 ticketTypeSelect.removeChild(option);
             }
+        });
+    }
+
+    // Organizer Access Code logic
+    const accessCodeInput = document.getElementById('accessCode');
+    const orgOption = document.getElementById('orgOption');
+    if (accessCodeInput && orgOption && ticketTypeSelect) {
+        accessCodeInput.addEventListener('input', (e) => {
+            if (e.target.value.trim().toUpperCase() === 'SAPE-ORG-2026') {
+                orgOption.hidden = false;
+                orgOption.disabled = false;
+                ticketTypeSelect.value = "0";
+            } else {
+                orgOption.hidden = true;
+                orgOption.disabled = true;
+                if (ticketTypeSelect.value === "0") {
+                    ticketTypeSelect.value = "5000"; // Reset to standard
+                }
+            }
+            if (typeof updateTotalPrice === 'function') updateTotalPrice();
         });
     }
     
@@ -156,6 +182,7 @@ async function handlePaymentSubmit(e) {
     const ticketPrice = ticketTypeSelect.value;
     const ticketQuantity = parseInt(document.getElementById('ticketQuantity').value);
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const accessCode = document.getElementById('accessCode') ? document.getElementById('accessCode').value.trim().toUpperCase() : '';
     
     // Validate form
     if (!fullName || !email || !phone) {
@@ -178,15 +205,19 @@ async function handlePaymentSubmit(e) {
         return;
     }
     
-    // Collect additional names if quantity > 1
+    // Collect additional names and emails if quantity > 1
     const guestNames = [fullName]; // First ticket uses primary contact name
+    const guestEmails = [email];   // First ticket uses primary contact email
     
     if (ticketQuantity > 1) {
         for (let i = 2; i <= ticketQuantity; i++) {
             const additionalNameInput = document.getElementById(`additionalName${i}`);
+            const additionalEmailInput = document.getElementById(`additionalEmail${i}`);
             const additionalName = additionalNameInput ? additionalNameInput.value.trim() : '';
-            // Use primary contact name if additional name is not provided
+            const additionalEmail = additionalEmailInput ? additionalEmailInput.value.trim() : '';
             guestNames.push(additionalName || fullName);
+            // Fall back to buyer's email if guest email not provided
+            guestEmails.push((additionalEmail && isValidEmail(additionalEmail)) ? additionalEmail : email);
         }
     }
     
@@ -207,7 +238,9 @@ async function handlePaymentSubmit(e) {
             ticketPrice: Number(ticketPrice),
             ticketQuantity,
             paymentMethod,
-            guestNames
+            guestNames,
+            guestEmails,
+            accessCode
         });
 
         if (!saveResult.success || !Array.isArray(saveResult.tickets) || saveResult.tickets.length === 0) {
@@ -224,9 +257,8 @@ async function handlePaymentSubmit(e) {
             // Generate and display QR codes for all tickets
             displayAllTickets(savedTickets);
             
-            // Send email confirmation (if Firebase is configured)
-            // For multiple tickets, we'll send one email with all ticket info
-            await sendMultiTicketEmail(savedTickets, email);
+            // Send individual confirmation email to each guest
+            await sendMultiTicketEmail(savedTickets, email, guestEmails);
             
             // Show success modal
             const successModal = document.getElementById('successModal');
@@ -301,7 +333,7 @@ function displayAllTickets(tickets) {
         ticketElement.style.marginBottom = tickets.length > 1 ? '2rem' : '0';
 
         const ticketLogo = document.createElement('img');
-        ticketLogo.src = `${TICKET_LOGO_SRC}?v=2026`;
+        ticketLogo.src = TICKET_LOGO_SRC;
         ticketLogo.alt = 'SAPE Gala Logo';
         ticketLogo.width = 56;
         ticketLogo.height = 56;
@@ -395,6 +427,10 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     if (ticketData.ticketType.includes('Early Bird')) {
         ticketCategory = 'EARLY BIRD';
         bgColor = '#1a3a2e'; // Dark green for Early Bird
+    } else if (ticketData.ticketType.includes('Organizer')) {
+        ticketCategory = 'ORGANIZER';
+        bgColor = '#2d2d2d'; // Dark gray
+        ticketLabel = 'COMPLIMENTARY';
     } else if (ticketData.ticketType.includes('VVIP')) {
         ticketCategory = 'VVIP';
         bgColor = '#000000'; // Black for VVIP
@@ -542,6 +578,15 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
         ctx.fillText('— VIP —', leftX, 244);
         ctx.font = '18px serif';
         ctx.fillText('KES 10,000', leftX, 276);
+    } else if (ticketCategory === 'ORGANIZER') {
+        ctx.fillStyle = 'rgba(197, 155, 100, 0.2)';
+        ctx.fillRect(leftX - 98, 220, 196, 76);
+        
+        ctx.fillStyle = '#c59b64';
+        ctx.font = 'bold 12px serif';
+        ctx.fillText('— ORGANIZER —', leftX, 244);
+        ctx.font = '16px serif';
+        ctx.fillText('COMPLIMENTARY', leftX, 276);
     } else {
         ctx.fillStyle = '#c59b64';
         ctx.font = 'bold 30px serif';
@@ -584,11 +629,11 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     ctx.fillStyle = '#c59b64';
     ctx.font = '18px sans-serif';
     midY += 35;
-    ctx.fillText('16 MAY 2026 | DOORS OPEN AT 6PM', midX, midY);
+    ctx.fillText('23 MAY 2026 | DOORS OPEN AT 3PM', midX, midY);
     
     // Venue
     midY += 35;
-    ctx.fillText('SARIT CENTRE, NAIROBI', midX, midY);
+    ctx.fillText('EMARA OLE-SERENI, NAIROBI', midX, midY);
     
     // === RIGHT SECTION: Ticket Info & QR ===
     const rightX = section1Width + section2Width + 20;
@@ -657,9 +702,9 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     // Event date & time
     ctx.fillStyle = '#c59b64';
     ctx.font = '10px sans-serif';
-    ctx.fillText('16 MAY 2026 | 6PM', rightCenterX, 320);
+    ctx.fillText('23 MAY 2026 | 3PM', rightCenterX, 320);
     
-    ctx.fillText('SARIT CENTRE, NAIROBI', rightCenterX, 335);
+    ctx.fillText('EMARA OLE-SERENI, NAIROBI', rightCenterX, 335);
     
     // Border around entire ticket
     ctx.strokeStyle = 'rgba(197, 155, 100, 0.3)';
@@ -680,57 +725,60 @@ async function downloadSingleTicket(ticketData, qrIndex = 0) {
     });
 }
 
-// Send email confirmation for multiple tickets
-async function sendMultiTicketEmail(tickets, email) {
-    console.log(`📧 Preparing to send email to ${email}`);
-    console.log(`   Total tickets: ${tickets.length}`);
+// Send individual email confirmation to each guest
+async function sendMultiTicketEmail(tickets, primaryEmail, guestEmails = []) {
+    console.log(`Preparing to send ${tickets.length} ticket email(s)`);
     
     try {
-        // For multiple tickets, send email for the primary ticket with all info
-        const primaryTicket = tickets[0];
-        const totalAmount = tickets.reduce((sum, t) => sum + parseInt(t.ticketPrice), 0);
-        
-        // Prepare ticket data
-        const ticketData = {
-            name: primaryTicket.fullName,
-            email: email,
-            ticketType: primaryTicket.ticketType,
-            ticketId: primaryTicket.ticketId,
-            quantity: tickets.length,
-            totalAmount: totalAmount,
-            purchaseDate: primaryTicket.purchaseDate,
-            ticketPrice: primaryTicket.ticketPrice
-        };
-        
-        // Call the Cloud Function directly as HTTP endpoint
         const functionUrl = 'https://us-central1-sape-gala-2026.cloudfunctions.net/sendTicketEmail';
         
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                data: {
-                    to: email,
-                    ticketData: ticketData,
-                    qrCode: primaryTicket.ticketId
-                }
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.error?.message || 'Failed to send email');
+        // Send one individual email per ticket to the guest's own email address sequentially
+        const results = [];
+        for (let index = 0; index < tickets.length; index++) {
+            const ticket = tickets[index];
+            const recipientEmail = guestEmails[index] || primaryEmail;
+            
+            const ticketData = {
+                name: ticket.fullName,
+                email: recipientEmail,
+                ticketType: ticket.ticketType,
+                ticketId: ticket.ticketId,
+                totalAmount: ticket.ticketPrice,
+                purchaseDate: ticket.purchaseDate,
+                ticketPrice: ticket.ticketPrice,
+                qrCode: ticket.ticketId
+            };
+            
+            try {
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        data: {
+                            to: recipientEmail,
+                            ticketData: ticketData,
+                            qrCode: ticket.ticketId
+                        }
+                    })
+                });
+                const resJson = await response.json();
+                results.push(resJson);
+            } catch (err) {
+                console.error(`Failed to send email to ${recipientEmail}:`, err);
+                results.push({ success: false, error: err.message });
+            }
+            
+            // Wait 1 second between requests to prevent hitting Resend's API rate limit (2 req/sec)
+            if (index < tickets.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
         }
         
-        console.log('✅ Email sent successfully:', result);
-        return { success: true, message: 'Email sent successfully' };
+        console.log('All ticket emails processed:', results);
+        return { success: true, message: 'Emails sent successfully' };
         
     } catch (error) {
-        console.error('❌ Failed to send email:', error);
-        // Don't fail the whole purchase if email fails
+        console.error('Failed to send emails:', error);
         return { success: false, error: error.message };
     }
 }

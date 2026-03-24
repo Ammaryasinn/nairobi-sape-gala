@@ -61,6 +61,11 @@
     --shadow-gold: 0 8px 30px rgba(197, 155, 100, 0.25);
 }
 
+html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
 html {
     scroll-behavior: smooth;
 }
@@ -70,9 +75,10 @@ body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
-    overflow-x: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
     position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Floating Gold Particles Container */
@@ -485,10 +491,12 @@ body.transitioning .page-transition {
 
 .section-title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-size: clamp(2rem, 5vw, 4rem);
     color: var(--text-primary);
     font-weight: 700;
     margin-bottom: 1rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .about-content {
@@ -576,7 +584,7 @@ body.transitioning .page-transition {
 .mission-description {
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.4rem;
-    line-height: 2;
+    line-height: 1.8;
     color: var(--text-tertiary);
     text-align: center;
     margin-bottom: 1.5rem;
@@ -1215,9 +1223,12 @@ body.transitioning .page-transition {
 
 .contact-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 3rem;
     margin-bottom: 5rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .contact-card {
@@ -1347,10 +1358,11 @@ body.transitioning .page-transition {
 
 .cta-title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-size: clamp(1.8rem, 6vw, 3.5rem);
     color: var(--text-primary);
     margin-bottom: 1.5rem;
     font-weight: 700;
+    word-wrap: break-word;
 }
 
 .cta-description {
@@ -1615,6 +1627,10 @@ body.transitioning .page-transition {
 }
 
 .ticket-select {
+    width: 100%;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
     padding: 1rem;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -2030,6 +2046,67 @@ body.transitioning .page-transition {
 }
 
 /* ===========================
+   TOP NAV CTA
+   =========================== */
+.top-nav-cta {
+    position: fixed;
+    top: 1.5rem;
+    left: 2rem;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1.5rem;
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 50px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.top-nav-cta:hover {
+    background: var(--gold);
+    color: var(--bg-primary);
+}
+
+/* ===========================
+   FLOATING CTA
+   =========================== */
+.floating-cta-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999;
+}
+
+.floating-cta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--gold), var(--dark-gold));
+    color: var(--bg-primary);
+    padding: 1rem 1.8rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(197, 155, 100, 0.4);
+    transition: all 0.3s ease;
+}
+
+.floating-cta:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(197, 155, 100, 0.6);
+}
+
+.floating-cta svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ===========================
    RESPONSIVE DESIGN
    =========================== */
 @media (max-width: 1024px) {
@@ -2048,11 +2125,29 @@ body.transitioning .page-transition {
 
 @media (max-width: 768px) {
     .container {
-        padding: 0 1.5rem;
+        padding: 0 1rem;
+        max-width: 100vw;
     }
 
     .about-content {
         max-width: 100%;
+    }
+
+    .floating-cta-container {
+        bottom: 20px;
+        right: 20px;
+    }
+
+    .floating-cta {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .top-nav-cta {
+        top: 1rem;
+        right: 4.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
     }
 
     .about-description {
@@ -2095,7 +2190,8 @@ body.transitioning .page-transition {
         display: none;
     }
     
-    .features-grid {
+    .features-grid,
+    .contact-grid {
         grid-template-columns: 1fr;
         gap: 2rem;
     }
@@ -2106,6 +2202,19 @@ body.transitioning .page-transition {
     
     .timeline-item::before {
         left: -2.5rem;
+    }
+    
+    .timeline-time {
+        min-width: unset;
+        font-size: 0.9rem;
+        padding-right: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
     
     .speakers-grid {
@@ -2210,7 +2319,7 @@ body.transitioning .page-transition {
     }
     
     .timeline-time {
-        font-size: 1.2rem;
+        font-size: 0.85rem;
     }
     
     .timeline-title {
@@ -3201,7 +3310,7 @@ body.transitioning .page-transition {
     }
     
     .section-title {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     
     .cta-content h2 {
@@ -3264,7 +3373,7 @@ body.transitioning .page-transition {
     
     /* About Section */
     .section-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
     
     .section-subtitle {

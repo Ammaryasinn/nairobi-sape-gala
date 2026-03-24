@@ -25,14 +25,17 @@ const DEFAULT_ALLOWED_ORIGINS = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:8042',
-    'http://127.0.0.1:8042'
+    'http://127.0.0.1:8042',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
 ];
 
 const TICKET_TYPES = {
     'Early Bird - KES 3,000 (Available for 9 days only)': 3000,
     'Standard - KES 5,000': 5000,
     'VIP - KES 10,000': 10000,
-    'VVIP - KES 20,000': 20000
+    'VVIP - KES 20,000': 20000,
+    'Organizer (Complimentary) - KES 0': 0
 };
 
 const LAUNCH_DATE_STR = '2026-04-01T00:00:00Z'; // Placeholder: update with actual launch date
@@ -201,7 +204,7 @@ function validatePaymentMethod(value) {
     return value;
 }
 
-function validateTicketType(ticketType, ticketPrice) {
+function validateTicketType(ticketType, ticketPrice, accessCode) {
     const normalizedType = sanitizeText(ticketType, 'Ticket type', 60);
     const normalizedPrice = Number(ticketPrice);
 
@@ -217,6 +220,14 @@ function validateTicketType(ticketType, ticketPrice) {
         if (new Date() > earlyBirdDeadline) {
             const error = new Error('Early Bird tickets are no longer available.');
             error.statusCode = 400;
+            throw error;
+        }
+    }
+
+    if (normalizedType.includes('Organizer')) {
+        if (typeof accessCode !== 'string' || accessCode.trim().toUpperCase() !== 'SAPE-ORG-2026') {
+            const error = new Error('Invalid or missing access code for complimentary tickets.');
+            error.statusCode = 403;
             throw error;
         }
     }
@@ -278,14 +289,53 @@ function formatPurchaseDate(value) {
     });
 }
 
-function buildTicketEmailHtml(ticketData, qrCode) {
-    const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrCode)}&size=200&margin=1&dark=0a0a0a&light=ffffff&ecLevel=H`;
-    const purchaseDate = formatPurchaseDate(ticketData.purchaseDate);
-    const guestName = escapeHtml(ticketData.name || ticketData.fullName || 'Guest');
-    const guestEmail = escapeHtml(ticketData.email || '');
-    const safeTicketType = escapeHtml(ticketData.ticketType || 'General Admission');
-    const safeTicketId = escapeHtml(ticketData.ticketId || ticketData.ticketNumber || qrCode);
-    const amountPaid = Number(ticketData.totalAmount || ticketData.ticketPrice || 0).toLocaleString();
+function buildTicketEmailHtml(ticketData, qrCode, tickets = null) {
+    const ticketsToRender = (tickets && Array.isArray(tickets) && tickets.length > 0) 
+        ? tickets 
+        : [{ ...ticketData, ticketId: qrCode }];
+
+    const primaryTicket = ticketsToRender[0];
+    const primaryName = escapeHtml(primaryTicket.name || primaryTicket.fullName || 'Guest');
+    
+    const ticketCardsHtml = ticketsToRender.map(ticket => {
+        const qr = ticket.ticketId || ticket.qrCode || qrCode;
+        const url = `https://quickchart.io/qr?text=${encodeURIComponent(qr)}&size=200&margin=1&dark=0a0a0a&light=ffffff&ecLevel=H`;
+        const name = escapeHtml(ticket.name || ticket.fullName || ticket.guestName || primaryName);
+        const email = escapeHtml(ticket.email || primaryTicket.email || '');
+        const type = escapeHtml(ticket.ticketType || 'General Admission');
+        const amount = Number(ticket.totalAmount || ticket.ticketPrice || 0).toLocaleString();
+        const date = formatPurchaseDate(ticket.purchaseDate);
+        
+        return `
+            <div class="ticket-card">
+                <div class="qr-section">
+                    <img src="${url}" alt="Ticket QR Code" />
+                    <p class="qr-label">Scan this code at the entrance</p>
+                </div>
+                <div class="divider"></div>
+                <div class="ticket-row">
+                    <div class="ticket-label">Ticket ID</div>
+                    <div class="ticket-value ticket-id">${escapeHtml(qr)}</div>
+                </div>
+                <div class="ticket-row">
+                    <div class="ticket-label">Name</div>
+                    <div class="ticket-value">${name}</div>
+                </div>
+                <div class="ticket-row">
+                    <div class="ticket-label">Ticket Type</div>
+                    <div class="ticket-value">${type}</div>
+                </div>
+                <div class="ticket-row">
+                    <div class="ticket-label">Amount Paid</div>
+                    <div class="ticket-value">KES ${amount}</div>
+                </div>
+                <div class="ticket-row">
+                    <div class="ticket-label">Purchase Date</div>
+                    <div class="ticket-value">${date}</div>
+                </div>
+            </div>
+        `;
+    }).join("");
 
     return `
 <!DOCTYPE html>
@@ -293,7 +343,7 @@ function buildTicketEmailHtml(ticketData, qrCode) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Nairobi SAPE Gala Ticket</title>
+    <title>Your Nairobi SAPE Gala Tickets</title>
     <style>
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background-color: #f5f3ef; }
         .container { max-width: 600px; margin: 0 auto; background: white; }
@@ -338,59 +388,27 @@ function buildTicketEmailHtml(ticketData, qrCode) {
         </div>
 
         <div class="content">
-            <p class="greeting">Dear ${guestName},</p>
+            <p class="greeting">Dear ${primaryName},</p>
             <p style="font-size: 1.1rem; line-height: 1.8; color: #2d2d2d;">
-                Thank you for your order. Your ticket for the <strong>Nairobi SAPE Gala 2026</strong> is confirmed.
+                Thank you for your order. Your ${ticketsToRender.length > 1 ? 'tickets' : 'ticket'} for the <strong>Nairobi SAPE Gala 2026</strong> ${ticketsToRender.length > 1 ? 'are' : 'is'} confirmed.
             </p>
 
-            <div class="ticket-card">
-                <div class="qr-section">
-                    <img src="${qrCodeUrl}" alt="Ticket QR Code" />
-                    <p class="qr-label">Scan this code at the entrance</p>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="ticket-row">
-                    <div class="ticket-label">Ticket ID</div>
-                    <div class="ticket-value ticket-id">${safeTicketId}</div>
-                </div>
-                <div class="ticket-row">
-                    <div class="ticket-label">Name</div>
-                    <div class="ticket-value">${guestName}</div>
-                </div>
-                <div class="ticket-row">
-                    <div class="ticket-label">Email</div>
-                    <div class="ticket-value">${guestEmail}</div>
-                </div>
-                <div class="ticket-row">
-                    <div class="ticket-label">Ticket Type</div>
-                    <div class="ticket-value">${safeTicketType}</div>
-                </div>
-                <div class="ticket-row">
-                    <div class="ticket-label">Amount Paid</div>
-                    <div class="ticket-value">KES ${amountPaid}</div>
-                </div>
-                <div class="ticket-row">
-                    <div class="ticket-label">Purchase Date</div>
-                    <div class="ticket-value">${escapeHtml(purchaseDate)}</div>
-                </div>
-            </div>
+            ${ticketCardsHtml}
 
             <div class="event-details">
                 <h3>Event Details</h3>
                 <div class="event-info">
-                    <strong>📅 DATE & TIME</strong>
-                    Friday, May 16, 2026<br>
-                    6:00 PM - 12:00 AM (EAT)
+                    <strong>DATE &amp; TIME</strong>
+                    Saturday, May 23, 2026<br>
+                    3:00 PM - 9:00 PM (EAT)
                 </div>
                 <div class="event-info">
-                    <strong>📍 VENUE</strong>
-                    Sarit Centre Conference Hall<br>
-                    Westlands, Nairobi, Kenya
+                    <strong>VENUE</strong>
+                    Emara Ole-Sereni<br>
+                    Mombasa Road, Nairobi, Kenya
                 </div>
                 <div class="event-info">
-                    <strong>👔 DRESS CODE</strong>
+                    <strong>DRESS CODE</strong>
                     Fashion-forward formal / Sapologie inspired<br>
                     Think elegant tailoring, bold details, and sophisticated dresses
                 </div>
@@ -402,7 +420,7 @@ function buildTicketEmailHtml(ticketData, qrCode) {
                     <li><strong>Save this email</strong> - You'll need to present your QR code at the entrance</li>
                     <li><strong>Arrive early</strong> - Red carpet opens at 6:00 PM</li>
                     <li><strong>Bring a valid ID</strong> - For verification purposes</li>
-                    <li><strong>Parking available</strong> - At Sarit Centre Mall</li>
+                    <li><strong>Parking available</strong> - At Emara Ole-Sereni</li>
                     <li><strong>One entry only</strong> - Each ticket is valid for single entry</li>
                 </ul>
             </div>
@@ -410,7 +428,7 @@ function buildTicketEmailHtml(ticketData, qrCode) {
 
         <div class="footer">
             <p><strong>Nairobi SAPE Gala 2026</strong></p>
-            <p>Questions? Contact us at <a href="mailto:info@nairobisapegala.com">info@nairobisapegala.com</a></p>
+            <p>Questions? Contact us at <a href="mailto:events.sapegala@gmail.com">events.sapegala@gmail.com</a></p>
             <p>+254 710 283584</p>
             <div class="divider" style="max-width: 200px; margin: 20px auto;"></div>
             <p style="font-size: 0.85rem; color: #9d9690;">© 2026 Nairobi SAPE Gala. All rights reserved.</p>
@@ -432,7 +450,7 @@ async function sendEmailThroughResend({ to, subject, html }) {
             to: [to],
             subject,
             html,
-            reply_to: 'info@nairobisapegala.com'
+            reply_to: 'events.sapegala@gmail.com'
         })
     });
 
@@ -467,8 +485,15 @@ exports.createTicket = functions.runWith({ secrets: ['RESEND_API_KEY'] }).https.
         const phone = validatePhone(payload.phone);
         const paymentMethod = validatePaymentMethod(payload.paymentMethod);
         const quantity = validateQuantity(payload.ticketQuantity);
-        const { ticketType, ticketPrice } = validateTicketType(payload.ticketType, payload.ticketPrice);
+        const { ticketType, ticketPrice } = validateTicketType(payload.ticketType, payload.ticketPrice, payload.accessCode);
         const guestNames = validateGuestNames(payload.guestNames, quantity, fullName);
+        // Accept optional per-guest emails; fall back to primary email if not provided
+        const rawGuestEmails = Array.isArray(payload.guestEmails) ? payload.guestEmails : [];
+        const guestEmails = guestNames.map((_, i) => {
+            const ge = rawGuestEmails[i];
+            try { return ge && ge.trim() ? validateEmail(ge.trim()) : email; }
+            catch { return email; }
+        });
 
         const batch = db.batch();
         const purchaseDate = new Date().toISOString();
@@ -477,7 +502,7 @@ exports.createTicket = functions.runWith({ secrets: ['RESEND_API_KEY'] }).https.
             const ticket = {
                 ticketId,
                 fullName: guestName,
-                email,
+                email: guestEmails[index] || email, // use guest's own email if provided
                 phone,
                 ticketType,
                 ticketPrice,
@@ -528,20 +553,24 @@ exports.sendTicketEmail = functions.runWith({ secrets: ['RESEND_API_KEY'] }).htt
 
         await enforceRateLimit(req, 'send-ticket-email', 10, 60 * 1000);
 
-        const { to, ticketData, qrCode } = parsePayload(req);
+        const { to, ticketData, qrCode, tickets } = parsePayload(req);
         const email = validateEmail(to);
         const safeQrCode = sanitizeText(qrCode, 'QR code', 64);
 
-        if (!ticketData || typeof ticketData !== 'object') {
-            const validationError = new Error('Ticket data is required.');
+        if ((!ticketData || typeof ticketData !== 'object') && (!tickets || !Array.isArray(tickets) || tickets.length === 0)) {
+            const validationError = new Error('Ticket data or tickets array is required.');
             validationError.statusCode = 400;
             throw validationError;
         }
 
+        const subjectSuffix = (tickets && tickets.length > 1) 
+            ? `${tickets.length} Tickets` 
+            : safeQrCode;
+
         const message = await sendEmailThroughResend({
             to: email,
-            subject: `Your Ticket Confirmation - Nairobi SAPE Gala 2026 | ${safeQrCode}`,
-            html: buildTicketEmailHtml(ticketData, safeQrCode)
+            subject: `Your Ticket Confirmation - Nairobi SAPE Gala 2026 | ${subjectSuffix}`,
+            html: buildTicketEmailHtml(ticketData, safeQrCode, tickets)
         });
 
         res.status(200).json({
@@ -569,7 +598,7 @@ exports.sendEventReminders = functions.runWith({ secrets: ['RESEND_API_KEY'] }).
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
 
-        const eventDate = new Date('2026-05-16');
+        const eventDate = new Date('2026-05-23');
         eventDate.setHours(0, 0, 0, 0);
 
         if (tomorrow.getTime() !== eventDate.getTime()) {
@@ -599,16 +628,16 @@ exports.sendEventReminders = functions.runWith({ secrets: ['RESEND_API_KEY'] }).
 <body>
     <div class="container">
         <div class="header">
-            <h1>Tomorrow is the Big Day! 🎉</h1>
+            <h1>Tomorrow is the Big Day!</h1>
         </div>
         <div class="content">
             <p>Dear ${escapeHtml(ticket.fullName || 'Guest')},</p>
             <p>This is a friendly reminder that the <strong>Nairobi SAPE Gala 2026</strong> is tomorrow.</p>
             <div class="highlight">
-                <strong>📅 Date:</strong> Friday, May 16, 2026<br>
-                <strong>⏰ Time:</strong> 6:00 PM - 12:00 AM<br>
-                <strong>📍 Venue:</strong> Sarit Centre Conference Hall, Nairobi<br>
-                <strong>🎫 Your Ticket ID:</strong> ${escapeHtml(ticket.ticketId)}
+                <strong>Date:</strong> Saturday, May 23, 2026<br>
+                <strong>Time:</strong> 3:00 PM - 9:00 PM<br>
+                <strong>Venue:</strong> Emara Ole-Sereni, Nairobi<br>
+                <strong>Your Ticket ID:</strong> ${escapeHtml(ticket.ticketId)}
             </div>
             <p><strong>What to bring:</strong></p>
             <ul>
