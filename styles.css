@@ -3667,3 +3667,158 @@ body.transitioning .page-transition {
         width: 140px;
     }
 }
+
+/* ===========================
+   FEATURED SPONSOR DISPLAY
+   =========================== */
+.sponsor-featured {
+    text-align: center;
+    padding: 3rem 2rem;
+    margin-bottom: 2.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.sponsor-featured:hover {
+    border-color: rgba(197, 155, 100, 0.4);
+}
+
+.sponsor-featured-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0;
+}
+
+.sponsor-logo-link {
+    display: inline-block;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.sponsor-logo-link:hover {
+    transform: scale(1.04);
+    opacity: 0.85;
+}
+
+.sponsor-featured-logo {
+    max-width: 260px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: var(--sponsor-logo-filter, none);
+}
+
+/* Slightly desaturate in dark mode for elegance */
+.dark-mode .sponsor-featured-logo {
+    filter: brightness(0.92) contrast(1.05);
+}
+
+.sponsor-featured-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--text-tertiary);
+    letter-spacing: 0.04em;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .sponsor-featured-logo { max-width: 200px; }
+}
+
+/* ===========================
+   COMING SOON — LUXURY OVERLAY
+   =========================== */
+.coming-soon-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.coming-soon-content {
+    filter: blur(7px);
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.45;
+}
+
+.coming-soon-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.08) 0%, transparent 70%);
+}
+
+.coming-soon-badge {
+    text-align: center;
+    padding: 2rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.coming-soon-ornament {
+    width: 48px;
+    height: 48px;
+    color: var(--gold);
+    opacity: 0.9;
+    animation: ornamentGlow 4s ease-in-out infinite;
+}
+
+@keyframes ornamentGlow {
+    0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 4px rgba(197,155,100,0.3)); }
+    50%       { opacity: 1;   filter: drop-shadow(0 0 10px rgba(197,155,100,0.6)); }
+}
+
+.coming-soon-rule {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    border: none;
+    margin: 0;
+}
+
+.coming-soon-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    background: linear-gradient(90deg, #c59b64, #e8d5a8, #c59b64);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerText 4s linear infinite;
+}
+
+@keyframes shimmerText {
+    0%   { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+.coming-soon-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+    .coming-soon-badge { padding: 1.5rem 2rem; }
+    .coming-soon-label { font-size: 1.2rem; }
+    .coming-soon-ornament { width: 36px; height: 36px; }
+}

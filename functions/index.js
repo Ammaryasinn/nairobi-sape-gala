@@ -17,7 +17,8 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const DEFAULT_ALLOWED_ORIGINS = [
-    'https://nairobisapegala.com',
+    'https://sapegalanairobi.com',
+    'https://www.sapegalanairobi.com',
     'https://sape-gala-2026.web.app',
     'https://sape-gala-2026.firebaseapp.com',
     'http://localhost:5000',
@@ -40,7 +41,7 @@ const TICKET_TYPES = {
 
 const LAUNCH_DATE_STR = '2026-04-01T00:00:00Z'; // Placeholder: update with actual launch date
 
-const PUBLIC_LOGO_URL = process.env.PUBLIC_LOGO_URL || 'https://sape-gala-2026.web.app/images/sape-logo.png?v=20260317';
+const PUBLIC_LOGO_URL = process.env.PUBLIC_LOGO_URL || 'https://sapegalanairobi.com/images/sape-logo.png';
 
 function getAllowedOrigins() {
     const configuredOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -446,7 +447,7 @@ async function sendEmailThroughResend({ to, subject, html }) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            from: 'SAPE Gala 2026 <onboarding@resend.dev>',
+            from: 'Nairobi SAPE Gala <tickets@sapegalanairobi.com>',
             to: [to],
             subject,
             html,
