@@ -18,7 +18,8 @@ service cloud.firestore {
         'checkedIn',
         'checkInTime',
         'groupSize',
-        'ticketNumber'
+        'ticketNumber',
+        'webhookProcessed'
       ]);
     }
 
@@ -35,7 +36,6 @@ service cloud.firestore {
     }
 
     function isEarlyBirdValid() {
-      // Early bird ends 9 days after 2026-04-01, which is 2026-04-10
       return request.time < timestamp("2026-04-10T00:00:00Z");
     }
 
@@ -47,28 +47,6 @@ service cloud.firestore {
         (type == 'VVIP - KES 20,000' && price == 20000) ||
         (type == 'Organizer (Complimentary) - KES 0' && price == 0)
       );
-    }
-
-    function validCreate(ticketId) {
-      return allowedTicketKeys()
-        && request.resource.data.ticketId == ticketId
-        && validTicketId(ticketId)
-        && request.resource.data.fullName is string
-        && request.resource.data.fullName.size() > 1
-        && request.resource.data.fullName.size() <= 120
-        && validEmail(request.resource.data.email)
-        && validPhone(request.resource.data.phone)
-        && validTicketType(request.resource.data.ticketType, request.resource.data.ticketPrice)
-        && request.resource.data.paymentMethod == 'bank'
-        && request.resource.data.purchaseDate is string
-        && request.resource.data.checkedIn == false
-        && request.resource.data.checkInTime == null
-        && request.resource.data.groupSize is int
-        && request.resource.data.groupSize >= 1
-        && request.resource.data.groupSize <= 10
-        && request.resource.data.ticketNumber is int
-        && request.resource.data.ticketNumber >= 1
-        && request.resource.data.ticketNumber <= request.resource.data.groupSize;
     }
 
     function validStaffUpdate() {
@@ -106,6 +84,12 @@ service cloud.firestore {
     }
 
     match /_rate_limits/{document} {
+      allow read, write: if false;
+    }
+
+    // pending_orders: only writable by Cloud Functions via Admin SDK.
+    // No direct browser access is permitted.
+    match /pending_orders/{orderId} {
       allow read, write: if false;
     }
   }

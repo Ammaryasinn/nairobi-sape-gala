@@ -2,7 +2,7 @@
  * Firebase Cloud Functions for SAPE Gala 2026
  *
  * Required environment variables:
- * - RESEND_API_KEY
+ * - BREVO_API_KEY  (Brevo / Sendinblue transactional email API key)
  * Optional environment variables:
  * - ALLOWED_ORIGINS (comma-separated list of trusted site origins)
  */
@@ -32,11 +32,12 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 
 const TICKET_TYPES = {
-    'Early Bird - KES 3,000 (Available for 9 days only)': 3000,
-    'Standard - KES 5,000': 5000,
-    'VIP - KES 10,000': 10000,
-    'VVIP - KES 20,000': 20000,
-    'Organizer (Complimentary) - KES 0': 0
+    'Early Bird — KES 3,000 (Available for 9 days only)': 3000,
+    'Standard — KES 5,000': 5000,
+    'VIP — KES 10,000': 10000,
+    'VVIP — KES 20,000': 20000,
+    'Organizer (Complimentary) — KES 0': 0,
+    'Test Ticket (Admin Only) — KES 10': 10
 };
 
 const LAUNCH_DATE_STR = '2026-04-01T00:00:00Z'; // Placeholder: update with actual launch date
@@ -92,11 +93,11 @@ function ensureAllowedOrigin(req, res) {
     return true;
 }
 
-function getResendApiKey() {
-    const apiKey = process.env.RESEND_API_KEY;
+function getBrevoApiKey() {
+    const apiKey = process.env.BREVO_API_KEY;
 
     if (!apiKey) {
-        throw new Error('RESEND_API_KEY is not configured. Set it before deploying email functions.');
+        throw new Error('BREVO_API_KEY is not configured. Set it before deploying email functions.');
     }
 
     return apiKey.trim();
@@ -196,8 +197,9 @@ function validatePhone(value) {
 }
 
 function validatePaymentMethod(value) {
-    if (value !== 'bank') {
-        const error = new Error('Only bank transfer is currently supported.');
+    const allowed = ['bank', 'intasend-mpesa', 'complimentary'];
+    if (!allowed.includes(value)) {
+        const error = new Error('Invalid payment method.');
         error.statusCode = 400;
         throw error;
     }
@@ -439,31 +441,33 @@ function buildTicketEmailHtml(ticketData, qrCode, tickets = null) {
 </html>`;
 }
 
-async function sendEmailThroughResend({ to, subject, html }) {
-    const response = await fetch('https://api.resend.com/emails', {
+async function sendEmailThroughBrevo({ to, subject, html }) {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${getResendApiKey()}`,
-            'Content-Type': 'application/json'
+            'api-key': getBrevoApiKey(),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         },
         body: JSON.stringify({
-            from: 'Nairobi SAPE Gala <tickets@sapegalanairobi.com>',
-            to: [to],
+            sender: { name: 'Nairobi SAPE Gala', email: 'tickets@sapegalanairobi.com' },
+            to: [{ email: to }],
+            replyTo: { email: 'events.sapegala@gmail.com' },
             subject,
-            html,
-            reply_to: 'events.sapegala@gmail.com'
+            htmlContent: html
         })
     });
 
     const result = await response.json();
     if (!response.ok) {
-        throw new Error(`Resend API error: ${result.message || 'Unknown error'}`);
+        throw new Error(`Brevo API error: ${result.message || JSON.stringify(result)}`);
     }
 
-    return result;
+    // Normalize response to expose a consistent `id` field
+    return { id: result.messageId || result.id || 'sent' };
 }
 
-exports.createTicket = functions.runWith({ secrets: ['RESEND_API_KEY'] }).https.onRequest(async (req, res) => {
+exports.createTicket = functions.runWith({ secrets: ['BREVO_API_KEY'] }).https.onRequest(async (req, res) => {
     try {
         if (handlePreflight(req, res)) {
             return;
@@ -537,7 +541,7 @@ exports.createTicket = functions.runWith({ secrets: ['RESEND_API_KEY'] }).https.
     }
 });
 
-exports.sendTicketEmail = functions.runWith({ secrets: ['RESEND_API_KEY'] }).https.onRequest(async (req, res) => {
+exports.sendTicketEmail = functions.runWith({ secrets: ['BREVO_API_KEY'] }).https.onRequest(async (req, res) => {
     try {
         if (handlePreflight(req, res)) {
             return;
@@ -568,7 +572,7 @@ exports.sendTicketEmail = functions.runWith({ secrets: ['RESEND_API_KEY'] }).htt
             ? `${tickets.length} Tickets` 
             : safeQrCode;
 
-        const message = await sendEmailThroughResend({
+        const message = await sendEmailThroughBrevo({
             to: email,
             subject: `Your Ticket Confirmation - Nairobi SAPE Gala 2026 | ${subjectSuffix}`,
             html: buildTicketEmailHtml(ticketData, safeQrCode, tickets)
@@ -591,7 +595,7 @@ exports.sendTicketEmail = functions.runWith({ secrets: ['RESEND_API_KEY'] }).htt
     }
 });
 
-exports.sendEventReminders = functions.runWith({ secrets: ['RESEND_API_KEY'] }).pubsub
+exports.sendEventReminders = functions.runWith({ secrets: ['BREVO_API_KEY'] }).pubsub
     .schedule('0 18 * * *')
     .timeZone('Africa/Nairobi')
     .onRun(async () => {
@@ -653,7 +657,7 @@ exports.sendEventReminders = functions.runWith({ secrets: ['RESEND_API_KEY'] }).
 </html>`;
 
             try {
-                await sendEmailThroughResend({
+                await sendEmailThroughBrevo({
                     to: validateEmail(ticket.email),
                     subject: '🎉 Tomorrow: Nairobi SAPE Gala 2026 - See You on the Red Carpet!',
                     html: reminderHtml
@@ -667,3 +671,218 @@ exports.sendEventReminders = functions.runWith({ secrets: ['RESEND_API_KEY'] }).
         console.log(`📧 Sent ${ticketsSnapshot.size} reminder emails`);
         return null;
     });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// savePendingOrder — called by the browser BEFORE launching IntaSend payment.
+// Stores full order details (ticket type, guests, etc.) in Firestore so the
+// webhook can retrieve them without relying on localStorage or browser redirects.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.savePendingOrder = functions.runWith({ secrets: ['BREVO_API_KEY'] }).https.onRequest(async (req, res) => {
+    try {
+        if (handlePreflight(req, res)) return;
+        if (!ensureAllowedOrigin(req, res)) return;
+
+        if (req.method !== 'POST') {
+            res.status(405).json({ error: { message: 'Method not allowed.' } });
+            return;
+        }
+
+        const payload = parsePayload(req);
+        const fullName  = sanitizeText(payload.fullName, 'Full name');
+        const email     = validateEmail(payload.email);
+        const phone     = validatePhone(payload.phone);
+        const quantity  = validateQuantity(payload.ticketQuantity);
+        const { ticketType, ticketPrice } = validateTicketType(payload.ticketType, payload.ticketPrice, payload.accessCode);
+        const guestNames = validateGuestNames(payload.guestNames || [fullName], quantity, fullName);
+        const rawGuestEmails = Array.isArray(payload.guestEmails) ? payload.guestEmails : [];
+        const guestEmails = guestNames.map((_, i) => {
+            const ge = rawGuestEmails[i];
+            try { return ge && ge.trim() ? validateEmail(ge.trim()) : email; }
+            catch { return email; }
+        });
+
+        // Use phone+email as document id so the webhook can look it up easily.
+        // Format: "<normalised_phone>_<email>"
+        const normalizedPhone = phone.replace(/^\+/, '').replace(/\D/g, '');
+        const orderId = `${normalizedPhone}_${email}`.replace(/[^a-zA-Z0-9_@.]/g, '_');
+
+        const orderDoc = {
+            orderId,
+            fullName,
+            email,
+            phone,
+            ticketType,
+            ticketPrice,
+            ticketQuantity: quantity,
+            guestNames,
+            guestEmails,
+            accessCode: payload.accessCode || '',
+            paymentMethod: 'intasend-mpesa',
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2-hour TTL
+        };
+
+        await db.collection('pending_orders').doc(orderId).set(orderDoc);
+        console.log(`✅ Pending order saved: ${orderId}`);
+
+        res.status(200).json({ result: { success: true, orderId } });
+    } catch (error) {
+        console.error('❌ Error saving pending order:', error);
+        res.status(error.statusCode || 500).json({ error: { message: error.message || 'Failed to save pending order.' } });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// intasendWebhook — receives payment notifications directly from IntaSend.
+// This fires server-to-server the moment a payment completes, with no browser
+// involved. It looks up the matching pending order and issues tickets + email.
+//
+// Register this URL in IntaSend Dashboard → Settings → Webhooks:
+//   https://us-central1-sape-gala-2026.cloudfunctions.net/intasendWebhook
+// ─────────────────────────────────────────────────────────────────────────────
+exports.intasendWebhook = functions.runWith({ secrets: ['BREVO_API_KEY'] }).https.onRequest(async (req, res) => {
+    // IntaSend sends POST with JSON body. Respond 200 quickly so IntaSend
+    // doesn't retry (we process asynchronously after responding).
+    if (req.method !== 'POST') {
+        res.status(405).send('Method not allowed');
+        return;
+    }
+
+    // Acknowledge immediately — IntaSend expects a 200 fast
+    res.status(200).json({ received: true });
+
+    try {
+        const body = req.body || {};
+        const state = (body.state || body.status || '').toUpperCase();
+
+        console.log('📩 IntaSend webhook received:', JSON.stringify(body));
+
+        // Only process COMPLETE payments
+        if (state !== 'COMPLETE') {
+            console.log(`⏭️ Ignoring webhook with state: ${state}`);
+            return;
+        }
+
+        const rawEmail   = (body.account || body.email || '').trim().toLowerCase();
+        const rawPhone   = (body.phone_number || body.phone || '').trim().replace(/^\+/, '').replace(/\D/g, '');
+        const amountPaid = Number(body.net_amount || body.amount || 0);
+
+        console.log(`💰 Payment complete — email: ${rawEmail}, phone: ${rawPhone}, amount: ${amountPaid}`);
+
+        if (!rawPhone && !rawEmail) {
+            console.error('❌ Webhook missing both email and phone — cannot match order');
+            return;
+        }
+
+        // Look up pending order — try phone+email first, then phone alone, then email alone
+        let orderSnap = null;
+        const ordersRef = db.collection('pending_orders');
+
+        if (rawPhone && rawEmail) {
+            const orderId = `${rawPhone}_${rawEmail}`.replace(/[^a-zA-Z0-9_@.]/g, '_');
+            const docRef = ordersRef.doc(orderId);
+            const doc = await docRef.get();
+            if (doc.exists && doc.data().status === 'pending') {
+                orderSnap = doc;
+            }
+        }
+
+        // Fallback: search by phone
+        if (!orderSnap && rawPhone) {
+            const qSnap = await ordersRef
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(5)
+                .get();
+            qSnap.forEach(doc => {
+                if (!orderSnap) {
+                    const d = doc.data();
+                    const storedPhone = (d.phone || '').replace(/^\+/, '').replace(/\D/g, '');
+                    if (storedPhone === rawPhone) orderSnap = doc;
+                }
+            });
+        }
+
+        // Fallback: search by email
+        if (!orderSnap && rawEmail) {
+            const qSnap = await ordersRef
+                .where('email', '==', rawEmail)
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(3)
+                .get();
+            if (!qSnap.empty) orderSnap = qSnap.docs[0];
+        }
+
+        if (!orderSnap) {
+            console.error(`❌ No matching pending order found for phone=${rawPhone}, email=${rawEmail}`);
+            return;
+        }
+
+        const order = orderSnap.data();
+
+        // Mark as processing to prevent duplicate ticket creation on retries
+        await orderSnap.ref.update({ status: 'processing' });
+
+        // Create tickets in Firestore
+        const batch = db.batch();
+        const purchaseDate = new Date().toISOString();
+        const tickets = order.guestNames.map((guestName, index) => {
+            const ticketId = generateTicketId();
+            const ticket = {
+                ticketId,
+                fullName: guestName,
+                email: order.guestEmails[index] || order.email,
+                phone: order.phone,
+                ticketType: order.ticketType,
+                ticketPrice: order.ticketPrice,
+                paymentMethod: 'intasend-mpesa',
+                purchaseDate,
+                checkedIn: false,
+                checkInTime: null,
+                groupSize: order.ticketQuantity,
+                ticketNumber: index + 1,
+                webhookProcessed: true
+            };
+            batch.set(db.collection('tickets').doc(ticketId), ticket);
+            return ticket;
+        });
+
+        await batch.commit();
+        console.log(`✅ ${tickets.length} ticket(s) created via webhook`);
+
+        // Mark pending order as completed
+        await orderSnap.ref.update({ status: 'completed', completedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+        // Send confirmation emails (one per guest)
+        for (let i = 0; i < tickets.length; i++) {
+            const ticket = tickets[i];
+            const recipientEmail = order.guestEmails[i] || order.email;
+            try {
+                await sendEmailThroughBrevo({
+                    to: recipientEmail,
+                    subject: `Your Ticket Confirmation - Nairobi SAPE Gala 2026 | ${ticket.ticketId}`,
+                    html: buildTicketEmailHtml(
+                        { name: ticket.fullName, email: recipientEmail, ticketType: ticket.ticketType, ticketPrice: ticket.ticketPrice, purchaseDate },
+                        ticket.ticketId
+                    )
+                });
+                console.log(`📧 Email sent to ${recipientEmail} for ticket ${ticket.ticketId}`);
+            } catch (emailErr) {
+                console.error(`❌ Failed to email ${recipientEmail}:`, emailErr.message);
+            }
+            // Rate limit: 1 email/sec
+            if (i < tickets.length - 1) {
+                await new Promise(r => setTimeout(r, 1100));
+            }
+        }
+
+        console.log(`🎉 Webhook processing complete for order ${orderSnap.id}`);
+
+    } catch (err) {
+        console.error('❌ Webhook processing error:', err);
+        // Don't re-throw — we already sent 200 to IntaSend
+    }
+});
+

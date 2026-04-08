@@ -472,12 +472,30 @@ async function handlePaymentSubmit(e) {
         // Store the callback for desktop inline usage
         window.currentPaymentFinaliseCallback = finaliseOrder;
 
-        // Store the order data in localStorage in case of a mobile redirect
+        // Store the order data in localStorage as a LOCAL fallback (recovery banner)
         const pendingOrder = {
             fullName, email, phone, ticketType, ticketPrice, ticketQuantity, paymentMethod: 'intasend-mpesa', guestNames, guestEmails, accessCode,
             _savedAt: Date.now()
         };
         localStorage.setItem('sapePendingOrder', JSON.stringify(pendingOrder));
+
+        // ── PRIMARY: Save order to Firestore via Cloud Function so the webhook
+        //            can create tickets server-side even if the browser never
+        //            comes back. Fire-and-forget with a small timeout.
+        try {
+            await fetch('https://us-central1-sape-gala-2026.cloudfunctions.net/savePendingOrder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    data: { fullName, email, phone, ticketType, ticketPrice, ticketQuantity, guestNames, guestEmails, accessCode }
+                }),
+                signal: AbortSignal.timeout(8000)
+            });
+            console.log('✅ Pending order saved to Firestore for webhook');
+        } catch (saveErr) {
+            // Non-fatal — localStorage fallback still works
+            console.warn('⚠️ Could not save order to Firestore (will rely on localStorage):', saveErr.message);
+        }
 
         // Update IntaSend hidden button attributes and click it
         const hiddenBtn = document.getElementById('hiddenIntaSendBtn');

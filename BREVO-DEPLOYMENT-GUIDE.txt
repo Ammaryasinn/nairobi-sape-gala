@@ -1,0 +1,136 @@
+═══════════════════════════════════════════════════════════
+    FIREBASE FUNCTIONS DEPLOYMENT GUIDE
+    Email Service with Brevo for SAPE Gala 2026
+═══════════════════════════════════════════════════════════
+
+📋 STEP-BY-STEP DEPLOYMENT
+───────────────────────────
+
+STEP 1: Get Your Brevo API Key
+☐ Sign up / log in at https://app.brevo.com
+☐ Go to: Account Menu (top right) → SMTP & API → API Keys
+☐ Click "Generate a new API key"
+☐ Name it: "sape-gala-functions"
+☐ Copy the key (starts with xkeysib-)
+
+STEP 2: Verify Your Sender Domain in Brevo
+☐ Go to: Senders & Domains → Domains → Add a domain
+☐ Add: sapegalanairobi.com
+☐ Follow DNS verification steps (TXT + DKIM records in your domain DNS)
+☐ Once verified, emails will come from: tickets@sapegalanairobi.com
+
+STEP 3: Set the API Key as a Firebase Secret
+Open PowerShell in your project folder and run:
+
+    firebase secrets:set BREVO_API_KEY
+
+☐ Paste the copied Brevo API key when prompted
+☐ Press Enter
+☐ You should see: "✔ Secret BREVO_API_KEY set"
+
+STEP 4: Install/Update Dependencies
+☐ Run: cd functions
+☐ Run: npm install
+☐ Run: cd ..
+
+STEP 5: Deploy Functions
+☐ Run: firebase deploy --only functions
+☐ Wait 2-3 minutes for deployment
+☐ Look for "✔ Deploy complete!"
+
+STEP 6: Verify Deployment
+☐ Go to Firebase Console: https://console.firebase.google.com
+☐ Select your project: sape-gala-2026
+☐ Click "Functions" in left menu
+☐ You should see:
+    - createTicket       (HTTPS)
+    - sendTicketEmail    (HTTPS)
+    - sendEventReminders (Pub/Sub scheduled)
+☐ All should show status: "Healthy"
+
+═══════════════════════════════════════════════════════════
+
+✅ TESTING YOUR EMAIL SYSTEM
+─────────────────────────────
+
+1. Open your website
+2. Click "Get Your Ticket"
+3. Fill out the form and submit
+4. Check your email inbox
+5. You should receive a beautiful SAPE Gala ticket confirmation!
+
+If you receive the email, everything is working! 🎉
+
+To check logs if something goes wrong:
+    firebase functions:log
+
+═══════════════════════════════════════════════════════════
+
+🔧 TROUBLESHOOTING
+──────────────────
+
+Problem: "BREVO_API_KEY is not configured"
+Solution: Re-run: firebase secrets:set BREVO_API_KEY
+
+Problem: "Brevo API error: unauthorized"
+Solution: Verify the API key is correct (starts with xkeysib-)
+
+Problem: "Email not received"
+Solution:
+1. Check spam folder
+2. Verify sender domain in Brevo dashboard is active
+3. Check Firebase Functions logs: firebase functions:log
+4. Make sure sapegalanairobi.com DNS records are set correctly
+
+Problem: "Permission denied" deploying functions
+Solution: Run PowerShell as Administrator
+
+Problem: Functions deploy fine but emails not sending
+Solution:
+1. Check that BREVO_API_KEY secret is accessible to functions
+2. Confirm the sender email (tickets@sapegalanairobi.com) is verified in Brevo
+
+═══════════════════════════════════════════════════════════
+
+📧 WHAT HAPPENS AFTER DEPLOYMENT
+─────────────────────────────────
+
+1. When someone buys a ticket on your website:
+   - Their ticket data is saved to Firestore
+   - sendTicketEmail Cloud Function is called
+   - Beautiful confirmation email sent via Brevo
+   - QR code included for check-in
+
+2. One day before the event (May 22 evening, 6 PM EAT):
+   - sendEventReminders runs automatically
+   - Reminder emails sent to all unchecked-in attendees
+   - Your Ticket ID reminder included
+
+3. All emails come from: tickets@sapegalanairobi.com
+   (Branded & authenticated once domain is verified in Brevo)
+
+═══════════════════════════════════════════════════════════
+
+📊 BREVO FREE TIER LIMITS
+──────────────────────────
+
+Free:    300 emails/day   (9,000/month)
+Starter: 20,000/month for $9/mo  ← Recommended if you sell more than ~9 tickets/day
+
+Upgrade at: https://app.brevo.com/account/billing
+
+═══════════════════════════════════════════════════════════
+
+🎯 NEXT STEPS AFTER EMAIL IS WORKING
+─────────────────────────────────────
+
+1. ☐ Verify sapegalanairobi.com domain in Brevo
+2. ☐ Test complete ticket purchase flow end-to-end
+3. ☐ Test staff check-in system
+4. ☐ Monitor Brevo dashboard for delivery stats
+5. ☐ Upgrade Brevo plan before ticket sales peak
+
+═══════════════════════════════════════════════════════════
+
+Need help? Follow steps above one by one.
+Brevo docs: https://developers.brevo.com/reference/sendtransacemail

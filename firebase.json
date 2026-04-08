@@ -1,6 +1,7 @@
 {
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   },
   "functions": [
     {
@@ -24,7 +25,7 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://quickchart.io https://www.gstatic.com https://sapegalanairobi.com https://nairobisapegala.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://quickchart.io https://www.gstatic.com https://sapegalanairobi.com https://nairobisapegala.com https://*.intasend.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.intasend.com; frame-src 'self' https://*.intasend.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
           },
           {
             "key": "Referrer-Policy",
