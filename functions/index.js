@@ -743,9 +743,21 @@ exports.savePendingOrder = functions.runWith({ secrets: ['BREVO_API_KEY'] }).htt
 // ─────────────────────────────────────────────────────────────────────────────
 exports.intasendWebhook = functions.runWith({ secrets: ['BREVO_API_KEY'] }).https.onRequest(async (req, res) => {
     // IntaSend sends POST with JSON body. Respond 200 quickly so IntaSend
-    // doesn't retry (we process asynchronously after responding).
+    // doesn't retry (we process asynchronously after responding)./
     if (req.method !== 'POST') {
         res.status(405).send('Method not allowed');
+        return;
+    }
+
+    const body = req.body || {};
+
+    // ── Verify the IntaSend Challenge secret ──────────────────────────────────
+    // This must match exactly what you entered in the IntaSend webhook form.
+    const WEBHOOK_CHALLENGE = 'SapeGala2026-Webhook-Secret-K3nya';
+    const receivedChallenge = body.challenge || body.Challenge || '';
+    if (receivedChallenge !== WEBHOOK_CHALLENGE) {
+        console.warn('⛔ Webhook rejected — invalid or missing challenge:', receivedChallenge);
+        res.status(403).json({ error: 'Invalid challenge' });
         return;
     }
 
