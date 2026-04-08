@@ -4,6 +4,7 @@
 let currentTicketData = null;
 let allGeneratedTickets = []; // Store all tickets from multi-ticket purchase
 const TICKET_LOGO_SRC = 'images/sape-logo.png';
+const INTASEND_PUBLIC_KEY = 'ISPubKey_live_017c47ee-a538-4039-85f1-cbfb26023df3';
 
 function escapeHtml(value) {
     return String(value)
@@ -37,7 +38,171 @@ function loadTicketLogo() {
     });
 }
 
+async function checkPendingOrderRedirect() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSuccessParam = urlParams.get('status') === 'success';
+    const pendingOrderStr = localStorage.getItem('sapePendingOrder');
+
+    // --- Case 1: IntaSend redirected back with ?status=success ---
+    if (hasSuccessParam && pendingOrderStr) {
+        await _processAndGenerateTickets(pendingOrderStr);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+    }
+
+    // Clean dangling ?status=success with no order
+    if (hasSuccessParam && !pendingOrderStr) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+    }
+
+    // --- Case 2: Mobile didn't redirect back — stuck on IntaSend's page ---
+    // pendingOrder still in localStorage but no ?status=success in URL
+    if (!hasSuccessParam && pendingOrderStr) {
+        _showPendingOrderRecoveryBanner(pendingOrderStr);
+    }
+}
+
+// Shared logic: save ticket, show modal, send email
+async function _processAndGenerateTickets(pendingOrderStr, spinnerContainer = null) {
+    try {
+        const orderData = JSON.parse(pendingOrderStr);
+
+        const container = spinnerContainer || document.querySelector('.payment-form-container');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:4rem 2rem;">
+                    <div style="margin:0 auto 1.5rem;width:56px;height:56px;border:4px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+                    <h2 style="color:var(--gold);margin-bottom:1rem;font-family:'Playfair Display',serif;font-size:2rem;">Generating your tickets…</h2>
+                    <p style="color:var(--text-tertiary);">Please wait — do not close this page.</p>
+                </div>
+                <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+            `;
+        }
+
+        allGeneratedTickets = [];
+        const saveResult = await TicketDB.saveTicket(orderData);
+
+        if (!saveResult.success || !Array.isArray(saveResult.tickets) || saveResult.tickets.length === 0) {
+            throw new Error(saveResult.error || 'Failed to create tickets');
+        }
+
+        const savedTickets = saveResult.tickets;
+        allGeneratedTickets = savedTickets;
+        currentTicketData = savedTickets[0];
+
+        displayAllTickets(savedTickets);
+
+        const successModal = document.getElementById('successModal');
+        if (successModal) {
+            successModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        console.log(`✅ ${savedTickets.length} ticket(s) generated successfully`);
+
+        // Send emails in background
+        sendMultiTicketEmail(savedTickets, orderData.email, orderData.guestEmails).catch(e => {
+            console.error('Error sending emails in background:', e);
+        });
+
+    } catch (err) {
+        console.error('Error generating tickets:', err);
+        alert(err.message || 'There was an error generating your tickets. Please contact support at sapegalanairobi@gmail.com');
+    } finally {
+        localStorage.removeItem('sapePendingOrder');
+    }
+}
+
+// Banner shown when payment was made on mobile but user never came back
+function _showPendingOrderRecoveryBanner(pendingOrderStr) {
+    let orderData;
+    try { orderData = JSON.parse(pendingOrderStr); } catch { return; }
+
+    // Don't show banner if the saved order is older than 2 hours (likely stale / abandoned)
+    const savedAt = orderData._savedAt || 0;
+    if (savedAt && (Date.now() - savedAt) > 2 * 60 * 60 * 1000) {
+        localStorage.removeItem('sapePendingOrder');
+        return;
+    }
+
+    const banner = document.createElement('div');
+    banner.id = 'pendingOrderBanner';
+    banner.style.cssText = `
+        position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+        background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+        border-top: 2px solid #c59b64;
+        padding: 1.25rem 1.5rem;
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+        animation: slideUp 0.4s ease;
+    `;
+    banner.innerHTML = `
+        <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
+        <div style="flex:1;min-width:200px;">
+            <p style="margin:0 0 0.25rem;color:#c59b64;font-weight:600;font-size:1rem;font-family:'Playfair Display',serif;">
+                💳 Did you just pay?
+            </p>
+            <p style="margin:0;color:#aaa;font-size:0.85rem;line-height:1.4;">
+                It looks like your M-Pesa payment went through but you weren't redirected back. Click the button to generate your ${orderData.ticketQuantity > 1 ? orderData.ticketQuantity + ' tickets' : 'ticket'} now.
+            </p>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-shrink:0;">
+            <button id="recoverTicketBtn" style="
+                background: linear-gradient(135deg, #c59b64, #a07840);
+                color: #fff; border: none; border-radius: 8px;
+                padding: 0.75rem 1.4rem; font-size: 0.95rem; font-weight: 600;
+                cursor: pointer; white-space: nowrap;
+            ">✅ Get My Ticket</button>
+            <button id="dismissBannerBtn" style="
+                background: transparent; color: #666; border: 1px solid #444;
+                border-radius: 8px; padding: 0.75rem 1rem;
+                font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+            ">I didn't pay</button>
+        </div>
+    `;
+
+    document.body.appendChild(banner);
+
+    document.getElementById('recoverTicketBtn').addEventListener('click', async () => {
+        banner.remove();
+        const currentPending = localStorage.getItem('sapePendingOrder');
+        if (currentPending) {
+            await _processAndGenerateTickets(currentPending);
+        }
+    });
+
+    document.getElementById('dismissBannerBtn').addEventListener('click', () => {
+        localStorage.removeItem('sapePendingOrder');
+        banner.remove();
+    });
+}
+
+window.addEventListener('pageshow', (event) => {
+    // Determine if page is loaded from cache (e.g. Back button) or if IntaSend left artifacts
+    if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+        // Find and destroy any IntaSend full-screen iframes or overlays
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            if (iframe.src && iframe.src.includes('intasend')) {
+                iframe.remove();
+            }
+        });
+        
+        // Remove IntaSend overlay divs that block the UI
+        const overlays = document.querySelectorAll('div[class*="intasend"], div[id*="intasend"]');
+        overlays.forEach(el => el.remove());
+        
+        document.body.style.overflow = '';
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Check for redirect success from IntaSend mobile layout
+    checkPendingOrderRedirect();
+
     // Fade in page on load
     document.body.classList.remove('transitioning');
     
@@ -172,116 +337,188 @@ function initializePaymentPage() {
 
 async function handlePaymentSubmit(e) {
     e.preventDefault();
-    
-    // Get form values
+
+    // Read form values
     const fullName = document.getElementById('fullName').value.trim();
     const email = document.getElementById('email').value.trim();
     const phone = normalizePhone(document.getElementById('phone').value.trim());
     const ticketTypeSelect = document.getElementById('ticketType');
     const ticketType = ticketTypeSelect.options[ticketTypeSelect.selectedIndex].text;
-    const ticketPrice = ticketTypeSelect.value;
+    const ticketPrice = Number(ticketTypeSelect.value);
     const ticketQuantity = parseInt(document.getElementById('ticketQuantity').value);
-    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
     const accessCode = document.getElementById('accessCode') ? document.getElementById('accessCode').value.trim().toUpperCase() : '';
-    
-    // Validate form
+    const totalAmount = ticketPrice * ticketQuantity;
+    const isComplimentary = ticketPrice === 0;
+
+    // Basic validation
     if (!fullName || !email || !phone) {
         alert('Please fill in all required fields.');
         return;
     }
-
     if (!isValidEmail(email)) {
         alert('Please enter a valid email address.');
         return;
     }
-
     if (!/^\+?[0-9]{10,15}$/.test(phone)) {
         alert('Please enter a valid phone number.');
         return;
     }
 
-    if (paymentMethod !== 'bank') {
-        alert('Only bank transfer is currently available.');
-        return;
-    }
-    
-    // Collect additional names and emails if quantity > 1
-    const guestNames = [fullName]; // First ticket uses primary contact name
-    const guestEmails = [email];   // First ticket uses primary contact email
-    
+    // Collect guest names & emails for multi-ticket orders
+    const guestNames = [fullName];
+    const guestEmails = [email];
     if (ticketQuantity > 1) {
         for (let i = 2; i <= ticketQuantity; i++) {
-            const additionalNameInput = document.getElementById(`additionalName${i}`);
-            const additionalEmailInput = document.getElementById(`additionalEmail${i}`);
-            const additionalName = additionalNameInput ? additionalNameInput.value.trim() : '';
-            const additionalEmail = additionalEmailInput ? additionalEmailInput.value.trim() : '';
-            guestNames.push(additionalName || fullName);
-            // Fall back to buyer's email if guest email not provided
-            guestEmails.push((additionalEmail && isValidEmail(additionalEmail)) ? additionalEmail : email);
+            const nameEl = document.getElementById(`additionalName${i}`);
+            const emailEl = document.getElementById(`additionalEmail${i}`);
+            const gName = nameEl ? nameEl.value.trim() : '';
+            const gEmail = emailEl ? emailEl.value.trim() : '';
+            guestNames.push(gName || fullName);
+            guestEmails.push((gEmail && isValidEmail(gEmail)) ? gEmail : email);
         }
     }
-    
-    // Show loading state
+
     const submitButton = e.target.querySelector('.submit-button');
     const originalButtonText = submitButton.innerHTML;
-    submitButton.innerHTML = '<span>Processing...</span>';
-    submitButton.disabled = true;
-    
-    try {
-        allGeneratedTickets = [];
 
-        const saveResult = await TicketDB.saveTicket({
-            fullName,
-            email,
-            phone,
-            ticketType,
-            ticketPrice: Number(ticketPrice),
-            ticketQuantity,
-            paymentMethod,
-            guestNames,
-            guestEmails,
-            accessCode
-        });
+    // Helper: save ticket + send email after confirmed payment
+    async function finaliseOrder(paymentMethod) {
+        submitButton.innerHTML = '<span>Generating tickets...</span>';
+        submitButton.disabled = true;
+        try {
+            allGeneratedTickets = [];
+            const saveResult = await TicketDB.saveTicket({
+                fullName, email, phone,
+                ticketType,
+                ticketPrice,
+                ticketQuantity,
+                paymentMethod,
+                guestNames,
+                guestEmails,
+                accessCode
+            });
 
-        if (!saveResult.success || !Array.isArray(saveResult.tickets) || saveResult.tickets.length === 0) {
-            throw new Error(saveResult.error || 'Failed to create tickets');
-        }
+            if (!saveResult.success || !Array.isArray(saveResult.tickets) || saveResult.tickets.length === 0) {
+                throw new Error(saveResult.error || 'Failed to create tickets');
+            }
 
-        const savedTickets = saveResult.tickets;
-        allGeneratedTickets = savedTickets;
-        
-        if (savedTickets.length > 0) {
-            // Store first ticket as current (for backward compatibility)
+            const savedTickets = saveResult.tickets;
+            allGeneratedTickets = savedTickets;
             currentTicketData = savedTickets[0];
-            
-            // Generate and display QR codes for all tickets
+
             displayAllTickets(savedTickets);
-            
-            // Send individual confirmation email to each guest
-            await sendMultiTicketEmail(savedTickets, email, guestEmails);
-            
-            // Show success modal
+
             const successModal = document.getElementById('successModal');
             successModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            
-            // Reset form
-            const paymentForm = document.getElementById('paymentForm');
-            paymentForm.reset();
+
+            document.getElementById('paymentForm').reset();
             document.getElementById('totalAmount').textContent = 'KES 5,000';
             document.getElementById('ticketQuantity').value = '1';
             document.getElementById('additionalNamesSection').style.display = 'none';
-            
+
             console.log(`✅ ${savedTickets.length} ticket(s) generated successfully`);
-        } else {
-            throw new Error('No tickets were saved');
+
+            // Send emails in background without blocking UI
+            sendMultiTicketEmail(savedTickets, email, guestEmails).catch(e => {
+                console.error('Error sending emails in background:', e);
+            });
+        } catch (err) {
+            console.error('Error generating tickets:', err);
+            alert(err.message || 'There was an error completing your order. Please try again.');
+        } finally {
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
         }
-        
-    } catch (error) {
-        console.error('Error processing payment:', error);
-        alert(error.message || 'There was an error completing your order. Please try again.');
-    } finally {
-        // Restore button state
+    }
+
+    // --- Complimentary (organizer) tickets skip payment ---
+    if (isComplimentary) {
+        await finaliseOrder('complimentary');
+        return;
+    }
+
+    // --- IntaSend M-Pesa STK Push ---
+    submitButton.innerHTML = '<span>Opening M-Pesa...</span>';
+    submitButton.disabled = true;
+
+    try {
+        if (!window.intaSendInstance) {
+            window.intaSendInstance = new window.IntaSend({
+                publicAPIKey: INTASEND_PUBLIC_KEY,
+                live: true
+            })
+            .on('COMPLETE', async (response) => {
+                console.log('✅ IntaSend payment complete:', response);
+                if (window.currentPaymentFinaliseCallback) {
+                    await window.currentPaymentFinaliseCallback('intasend-mpesa');
+                }
+            })
+            .on('FAILED', (response) => {
+                console.error('❌ IntaSend payment failed:', response);
+                alert('Payment failed or was cancelled. Please try again.');
+                const submitBtn = document.getElementById('payNowBtn');
+                if (submitBtn) {
+                    submitBtn.innerHTML = `
+                        <span>Pay with M-Pesa</span>
+                        <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>`;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+
+        // Store the callback for desktop inline usage
+        window.currentPaymentFinaliseCallback = finaliseOrder;
+
+        // Store the order data in localStorage in case of a mobile redirect
+        const pendingOrder = {
+            fullName, email, phone, ticketType, ticketPrice, ticketQuantity, paymentMethod: 'intasend-mpesa', guestNames, guestEmails, accessCode,
+            _savedAt: Date.now()
+        };
+        localStorage.setItem('sapePendingOrder', JSON.stringify(pendingOrder));
+
+        // Update IntaSend hidden button attributes and click it
+        const hiddenBtn = document.getElementById('hiddenIntaSendBtn');
+        if (hiddenBtn) {
+            hiddenBtn.dataset.amount = totalAmount.toString();
+            hiddenBtn.dataset.currency = "KES";
+            hiddenBtn.dataset.email = email;
+            hiddenBtn.dataset.phone_number = phone.replace('+', '');
+            hiddenBtn.dataset.first_name = fullName;
+            // On mobile devices, IntaSend redirects the entire page. Let's make sure it comes back here.
+            hiddenBtn.dataset.redirect_url = window.location.origin + window.location.pathname + "?status=success";
+            hiddenBtn.click();
+
+            // Provide a manual fallback for mobile users who don't get redirected automatically
+            // or who press the "Back" button on their browser.
+            setTimeout(() => {
+                const btn = document.getElementById('payNowBtn');
+                if (btn) {
+                    btn.innerHTML = `
+                        <span>Paid? Click to Get Tickets</span>
+                        <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    `;
+                    btn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+                    btn.disabled = false;
+                    
+                    // Replace the form submission to just finalize
+                    const form = document.getElementById('paymentForm');
+                    form.onsubmit = async (ev) => {
+                        ev.preventDefault();
+                        await finaliseOrder('intasend-mpesa');
+                    };
+                }
+            }, 5000);
+        } else {
+            throw new Error("Hidden IntaSend button not found. Please refresh.");
+        }
+    } catch (err) {
+        console.error('IntaSend error:', err);
+        alert('Could not launch payment. Please refresh and try again.');
         submitButton.innerHTML = originalButtonText;
         submitButton.disabled = false;
     }
