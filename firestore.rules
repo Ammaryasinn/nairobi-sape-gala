@@ -36,7 +36,7 @@ service cloud.firestore {
     }
 
     function isEarlyBirdValid() {
-      return request.time < timestamp("2026-04-10T00:00:00Z");
+      return request.time < timestamp("2026-04-18T00:00:00Z");
     }
 
     function validTicketType(type, price) {

@@ -3,13 +3,13 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Ticket Purchase - Nairobi SAPE Gala 2026</title>
+        <title>Admin - Generate Tickets - Nairobi SAPE Gala 2026</title>
         <link rel="icon" href="/images/sape-logo.png" type="image/png" />
 
         <!-- SEO Meta Tags -->
         <meta
             name="description"
-            content="Reserve your tickets for the Nairobi SAPE Gala 2026. Early Bird KES 3,000 | Standard KES 5,000 | VIP KES 10,000 | VVIP KES 20,000. Secure checkout via M-Pesa."
+            content="Reserve your tickets for the Nairobi SAPE Gala 2026. Early Bird KES 3,000 | Standard KES 0 | VIP KES 10,000 | VVIP KES 20,000. Secure checkout via M-Pesa."
         />
         <meta
             name="keywords"
@@ -131,7 +131,7 @@
                 <div class="payment-grid">
                     <!-- Left: Form -->
                     <div class="payment-form-container">
-                        <div class="section-label">Secure Checkout</div>
+                        <div class="section-label">Admin Portal</div>
                         <h1
                             class="section-title"
                             style="
@@ -139,7 +139,7 @@
                                 margin-bottom: 0.5rem;
                             "
                         >
-                            Reserve Your Ticket
+                            Generate Tickets
                         </h1>
                         <div
                             class="title-divider"
@@ -211,21 +211,8 @@
                                     class="form-input"
                                     required
                                 >
-                                    <option value="" disabled>
-                                        Select ticket tier...
-                                    </option>
-                                    <option value="3000">
-                                        Early Bird — KES 3,000 (Available for 9
-                                        days only)
-                                    </option>
-                                    <option value="5000" selected>
-                                        Standard — KES 5,000
-                                    </option>
-                                    <option value="10000">
-                                        VIP — KES 10,000
-                                    </option>
-                                    <option value="20000">
-                                        VVIP — KES 20,000
+                                    <option value="0" id="orgOption" selected>
+                                        Organizer (Complimentary) — KES 0
                                     </option>
                                 </select>
                             </div>
@@ -266,6 +253,23 @@
                                 <div id="additionalNamesContainer"></div>
                             </div>
 
+                            <!-- Access Code (organizer field) -->
+                            <div class="form-group" style="margin-top: 1.5rem">
+                                <label
+                                    for="accessCode"
+                                    class="form-label"
+                                    style="font-size: 0.8rem; opacity: 0.6"
+                                    >Access Code</label
+                                >
+                                <input
+                                    type="text"
+                                    id="accessCode"
+                                    class="form-input"
+                                    placeholder="Enter access code"
+                                    style="font-size: 0.9rem"
+                                />
+                            </div>
+
                             <!-- Hidden payment method field -->
                             <input
                                 type="hidden"
@@ -278,7 +282,7 @@
                             <div class="payment-total">
                                 <span class="total-label">Total Amount</span>
                                 <span class="total-amount" id="totalAmount"
-                                    >KES 5,000</span
+                                    >KES 0</span
                                 >
                             </div>
 
@@ -299,7 +303,7 @@
                                 class="submit-button"
                                 id="payNowBtn"
                             >
-                                <span>Pay with M-Pesa</span>
+                                <span>Generate Ticket</span>
                                 <svg
                                     class="button-icon"
                                     viewBox="0 0 24 24"
@@ -405,7 +409,7 @@
                                 </div>
                                 <div class="tier-row">
                                     <span>Standard</span
-                                    ><strong>KES 5,000</strong>
+                                    ><strong>KES 0</strong>
                                 </div>
                                 <div class="tier-row">
                                     <span>VIP</span><strong>KES 10,000</strong>
@@ -525,6 +529,6 @@
 
         <script src="theme-toggle.js"></script>
         <script src="firebase-config.js"></script>
-        <script src="payment-handler.js?v=20260408e"></script>
+        <script src="admin-handler.js?v=20260408e"></script>
     </body>
 </html>

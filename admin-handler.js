@@ -373,7 +373,11 @@ async function handlePaymentSubmit(e) {
   const ticketQuantity = parseInt(
     document.getElementById("ticketQuantity").value,
   );
+  const accessCode = document.getElementById("accessCode")
+    ? document.getElementById("accessCode").value.trim().toUpperCase()
+    : "";
   const totalAmount = ticketPrice * ticketQuantity;
+  const isComplimentary = ticketPrice === 0;
 
   // Basic validation
   if (!fullName || !email || !phone) {
@@ -422,6 +426,7 @@ async function handlePaymentSubmit(e) {
         paymentMethod,
         guestNames,
         guestEmails,
+        accessCode,
       });
 
       if (
@@ -471,6 +476,12 @@ async function handlePaymentSubmit(e) {
     }
   }
 
+  // --- Complimentary (organizer) tickets skip payment ---
+  if (isComplimentary) {
+    await finaliseOrder("complimentary");
+    return;
+  }
+
   // --- IntaSend M-Pesa STK Push ---
   submitButton.innerHTML = "<span>Opening M-Pesa...</span>";
   submitButton.disabled = true;
@@ -516,6 +527,7 @@ async function handlePaymentSubmit(e) {
       paymentMethod: "intasend-mpesa",
       guestNames,
       guestEmails,
+      accessCode,
       _savedAt: Date.now(),
     };
     localStorage.setItem("sapePendingOrder", JSON.stringify(pendingOrder));
@@ -539,6 +551,7 @@ async function handlePaymentSubmit(e) {
               ticketQuantity,
               guestNames,
               guestEmails,
+              accessCode,
             },
           }),
           signal: AbortSignal.timeout(8000),
