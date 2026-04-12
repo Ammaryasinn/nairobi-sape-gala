@@ -907,11 +907,21 @@ exports.intasendWebhook = functions
         return;
       }
 
-      const rawEmail = (body.account || body.email || "").trim().toLowerCase();
-      const rawPhone = (body.phone_number || body.phone || "")
+      let rawEmail = (body.email || "").trim().toLowerCase();
+      let rawPhone = (body.phone_number || body.phone || "")
         .trim()
         .replace(/^\+/, "")
         .replace(/\D/g, "");
+
+      const accountField = String(body.account || "").trim();
+      if (accountField) {
+        if (accountField.includes("@")) {
+          rawEmail = rawEmail || accountField.toLowerCase();
+        } else {
+          rawPhone =
+            rawPhone || accountField.replace(/^\+/, "").replace(/\D/g, "");
+        }
+      }
       const amountPaid = Number(body.net_amount || body.amount || 0);
 
       console.log(
